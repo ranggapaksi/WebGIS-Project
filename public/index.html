@@ -209,7 +209,7 @@
 </div>
 
 <div id="floating-toolbar">
-    <button class="btn-float admin-only" onclick="document.getElementById('modalQuery').style.display='block'">
+    <button class="btn-float" onclick="document.getElementById('modalQuery').style.display='block'">
         <span class="icon">🔍</span><span class="label">Query</span>
     </button>
     <button id="btnLokasi" class="btn-float">
@@ -218,19 +218,19 @@
     <button id="btnLiveSync" class="btn-float">
         <span class="icon">🔄</span><span class="label" id="lblSync">Sync</span>
     </button>
-    <button class="btn-float admin-only" onclick="document.getElementById('modalShp').style.display='block'">
+    <button class="btn-float" onclick="document.getElementById('modalShp').style.display='block'">
         <span class="icon">📁</span><span class="label">Import</span>
     </button>
     
-    <button class="btn-float admin-only" onclick="inisiasiModeDrone()">
+    <button class="btn-float" onclick="inisiasiModeDrone()">
         <span class="icon" style="color: var(--accent);">✈️</span><span class="label" style="color: var(--accent);">Drone</span>
     </button>
     
-    <button class="btn-float admin-only" onclick="bukaModalBatimetri()">
+    <button class="btn-float" onclick="bukaModalBatimetri()">
         <span class="icon" style="color: var(--success);">🌊</span><span class="label" style="color: var(--success);">Survey</span>
     </button>
     
-    <button class="btn-float admin-only" onclick="bukaModalExport()">
+    <button class="btn-float" onclick="bukaModalExport()">
         <span class="icon">📤</span><span class="label">Export</span>
     </button>
     
@@ -240,10 +240,12 @@
     <button id="btnDistanceToggle" class="btn-float">
         <span class="icon">📏</span><span class="label">Jarak</span>
     </button>
+    
     <button class="btn-float admin-only" onclick="bukaModalOnline()">
         <span class="icon">👥</span><span class="label">Users</span>
     </button>
-    <button id="btnHapusShp" class="btn-float admin-only">
+    
+    <button id="btnHapusShp" class="btn-float">
         <span class="icon" style="color: var(--danger);">🗑️</span><span class="label" style="color: var(--danger);">Hapus</span>
     </button>
 </div>
@@ -706,11 +708,14 @@
         });
     }
 
+    // PERUBAHAN: Modifikasi fungsi hak akses agar User biasa bisa mengakses fitur lainnya
     function aturHakAkses() {
-        const adminElements = document.querySelectorAll('.admin-only, #btnHapusShp');
+        // Sekarang kita hanya menyembunyikan elemen yang punya class 'admin-only' (yaitu tombol Users)
+        const adminElements = document.querySelectorAll('.admin-only');
+        
         if (currentUser.role !== 'admin') { 
             adminElements.forEach(el => el.style.display = 'none'); 
-            map.pm.removeControls(); 
+            // Baris 'map.pm.removeControls();' DIHAPUS supaya fitur digitasi tidak hilang untuk User
         } else { 
             adminElements.forEach(el => el.style.display = 'flex'); 
         }
@@ -1183,7 +1188,7 @@
         });
     }
 
-    // OVERRIDE DIGITASI MANUAL (Menangani Poligon Biasa, Drone, Batimetri)
+    // OVERRIDE DIGITASI MANUAL
     map.on('pm:create', async function (e) {
         var layer = e.layer; 
         
@@ -1214,10 +1219,11 @@
         else if(tabel==='tower') attr.id_provider=prompt("ID Provider:"); 
         else if(tabel.startsWith('shp_')) attr.nama_layer=prompt("Nama Layer:");
         
+        // PERUBAHAN: Menambahkan info user aktif ke database supaya ketahuan siapa yang digitasi
         fetch('/api/save-feature', { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ tabel: tabel, geometry: geojson.geometry, attr: attr }) 
+            body: JSON.stringify({ tabel: tabel, geometry: geojson.geometry, attr: attr, uploader: currentUser.username }) 
         })
         .then(res => res.json())
         .then(d => { 
@@ -1514,7 +1520,7 @@
         } 
     }
 
-    // --- IMPORT DATA SPASIAL DENGAN PENANGKAPAN ERROR LENGKAP ---
+    // --- IMPORT DATA SPASIAL ---
     function prosesUploadSpasial() { 
         var f = document.getElementById('fileShp').files[0]; 
         var btn = document.getElementById('btnProsesShp'); 
@@ -1575,7 +1581,7 @@
 
     function kirimDataSpasial(ft, n, btn) { 
         var geomType = document.querySelector('input[name="shpGeomType"]:checked').value; 
-        var uploader = document.getElementById('namaUploader').value || (currentUser ? currentUser.username : 'Admin'); 
+        var uploader = currentUser ? currentUser.username : 'Admin'; 
         
         fetch('/api/save-shp', { 
             method: 'POST', 
