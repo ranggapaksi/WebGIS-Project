@@ -54,16 +54,16 @@
         .btn-float .icon { font-size: 14px; }
         .btn-float .label { font-size: 7px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
 
-        /* TOC ACCORDION AREA */
-        #toc-sidebar { position: absolute; top: 120px; left: 15px; width: 320px; max-height: calc(100vh - 190px); background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); z-index: 1000; overflow-y: auto; display: block; }
+        /* TOC ACCORDION AREA (NESTED FOLDERS) */
+        #toc-sidebar { position: absolute; top: 120px; left: 15px; width: 340px; max-height: calc(100vh - 190px); background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); z-index: 1000; overflow-y: auto; display: block; }
         .toc-header { padding: 12px 15px; background: var(--bg-panel); font-weight: 700; border-bottom: 1px solid var(--border-color); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; position: sticky; top: 0; z-index: 2; }
         .toc-card { margin: 10px; background: var(--bg-base); border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; }
-        .toc-card-title { font-size: 11px; font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 4px; border-radius: 4px;}
-        .toc-card-title:hover { background: var(--bg-hover); }
+        .toc-card-title { font-size: 12px; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 6px; border-radius: 4px; color: var(--accent); background: #f1f5f9; border: 1px solid #e2e8f0;}
+        .toc-card-title:hover { background: #e2e8f0; }
         .toc-controls { display: flex; gap: 4px; margin-bottom: 4px; }
         .btn-toc-action { flex: 1; border: 1px solid var(--border-color); background: var(--bg-panel); color: var(--text-main); padding: 4px 2px; font-size: 9px; font-weight: 600; text-transform: uppercase;}
         .btn-toc-action:hover { background: var(--bg-hover); }
-        .toc-feature-list { display: none; max-height: 200px; overflow-y: auto; border-top: 1px solid var(--border-color); padding-top: 5px; margin-top: 5px; }
+        .toc-feature-list { display: none; margin-top: 5px; }
 
         .modal-overlay { display: none; position: fixed; z-index: 4000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
         .modal-box { background: var(--bg-base); margin: 6% auto; width: 420px; border-radius: 6px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15);}
@@ -167,44 +167,44 @@
     <div class="toc-header">Table of Contents</div>
     
     <div class="toc-card">
-        <div class="toc-card-title" onclick="toggleTOCList('list-jalan', this)"><span>▶ Database: Jalan</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka List)</span></div>
-        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleLayerVis('jalan', this)">Hide Layer</button><button class="btn-toc-action" onclick="zoomKeLayer('jalan')">Zoom</button><button class="btn-toc-action" onclick="autoColorLayer('jalan')">Auto Color</button></div>
+        <div class="toc-card-title" onclick="toggleTOCList('list-jalan', this)"><span>▶ Database: Jalan</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div>
+        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('jalan', this)">Hide Tabel</button><button class="btn-toc-action" onclick="zoomKeLayer('jalan')">Zoom Tabel</button></div>
         <div class="toc-feature-list" id="list-jalan"></div>
     </div>
     
     <div class="toc-card">
-        <div class="toc-card-title" onclick="toggleTOCList('list-landuse', this)"><span>▶ Database: Landuse</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka List)</span></div>
-        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleLayerVis('landuse', this)">Hide Layer</button><button class="btn-toc-action" onclick="zoomKeLayer('landuse')">Zoom</button><button class="btn-toc-action" onclick="autoColorLayer('landuse')">Auto Color</button></div>
+        <div class="toc-card-title" onclick="toggleTOCList('list-landuse', this)"><span>▶ Database: Landuse</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div>
+        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('landuse', this)">Hide Tabel</button><button class="btn-toc-action" onclick="zoomKeLayer('landuse')">Zoom Tabel</button></div>
         <div class="toc-feature-list" id="list-landuse"></div>
     </div>
     
     <div class="toc-card">
-        <div class="toc-card-title" onclick="toggleTOCList('list-tower', this)"><span>▶ Database: Tower</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka List)</span></div>
-        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleLayerVis('tower', this)">Hide Layer</button><button class="btn-toc-action" onclick="zoomKeLayer('tower')">Zoom</button><button class="btn-toc-action" onclick="autoColorLayer('tower')">Auto Color</button></div>
+        <div class="toc-card-title" onclick="toggleTOCList('list-tower', this)"><span>▶ Database: Tower</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div>
+        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('tower', this)">Hide Tabel</button><button class="btn-toc-action" onclick="zoomKeLayer('tower')">Zoom Tabel</button></div>
         <div class="toc-feature-list" id="list-tower"></div>
     </div>
     
     <div class="toc-card">
-        <div class="toc-card-title" onclick="toggleTOCList('list-wilayah', this)"><span>▶ Database: Wilayah</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka List)</span></div>
-        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleLayerVis('wilayah', this)">Hide Layer</button><button class="btn-toc-action" onclick="zoomKeLayer('wilayah')">Zoom</button><button class="btn-toc-action" onclick="autoColorLayer('wilayah')">Auto Color</button></div>
+        <div class="toc-card-title" onclick="toggleTOCList('list-wilayah', this)"><span>▶ Database: Wilayah</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div>
+        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('wilayah', this)">Hide Tabel</button><button class="btn-toc-action" onclick="zoomKeLayer('wilayah')">Zoom Tabel</button></div>
         <div class="toc-feature-list" id="list-wilayah"></div>
     </div>
     
     <div class="toc-card">
-        <div class="toc-card-title" onclick="toggleTOCList('list-shp_poligon', this)"><span>▶ Layer: SHP Poligon</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka List)</span></div>
-        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleLayerVis('shp_poligon', this)">Hide Layer</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_poligon')">Zoom</button><button class="btn-toc-action" onclick="autoColorLayer('shp_poligon')">Auto Color</button></div>
+        <div class="toc-card-title" onclick="toggleTOCList('list-shp_poligon', this)"><span>▶ Layer: SHP Poligon</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div>
+        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('shp_poligon', this)">Hide Semua</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_poligon')">Zoom Semua</button></div>
         <div class="toc-feature-list" id="list-shp_poligon"></div>
     </div>
     
     <div class="toc-card">
-        <div class="toc-card-title" onclick="toggleTOCList('list-shp_garis', this)"><span>▶ Layer: SHP Garis / Rute</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka List)</span></div>
-        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleLayerVis('shp_garis', this)">Hide Layer</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_garis')">Zoom</button><button class="btn-toc-action" onclick="autoColorLayer('shp_garis')">Auto Color</button></div>
+        <div class="toc-card-title" onclick="toggleTOCList('list-shp_garis', this)"><span>▶ Layer: SHP Garis / Rute</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div>
+        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('shp_garis', this)">Hide Semua</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_garis')">Zoom Semua</button></div>
         <div class="toc-feature-list" id="list-shp_garis"></div>
     </div>
     
     <div class="toc-card">
-        <div class="toc-card-title" onclick="toggleTOCList('list-shp_titik', this)"><span>▶ Layer: SHP Titik</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka List)</span></div>
-        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleLayerVis('shp_titik', this)">Hide Layer</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_titik')">Zoom</button><button class="btn-toc-action" onclick="autoColorLayer('shp_titik')">Auto Color</button></div>
+        <div class="toc-card-title" onclick="toggleTOCList('list-shp_titik', this)"><span>▶ Layer: SHP Titik</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div>
+        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('shp_titik', this)">Hide Semua</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_titik')">Zoom Semua</button></div>
         <div class="toc-feature-list" id="list-shp_titik"></div>
     </div>
 </div>
@@ -360,23 +360,21 @@
     var currentBasemap = basemaps.osm; currentBasemap.addTo(map);
     function gantiBasemap() { map.removeLayer(currentBasemap); currentBasemap = basemaps[document.getElementById('basemapSwitcher').value]; currentBasemap.addTo(map); }
 
-    // --- GEOMAN CONTROL ---
     map.pm.addControls({ position: 'topright', drawMarker: true, drawPolyline: true, drawPolygon: true, editMode: true, dragMode: true, removalMode: true });
-    map.pm.setPathOptions({ color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.4 }); map.pm.setLang('id'); map.pm.setGlobalOptions({ snappable: false }); // Mematikan Magnet
+    map.pm.setPathOptions({ color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.4 }); map.pm.setLang('id'); map.pm.setGlobalOptions({ snappable: false });
     
     map.on('mousemove', function(e) { document.getElementById('koordinat-panel').innerHTML = `Lat: ${e.latlng.lat.toFixed(6)} | Lng: ${e.latlng.lng.toFixed(6)}`; });
     document.getElementById('btnToggleToc').onclick = function() { var t = document.getElementById('toc-sidebar'); t.style.display = (t.style.display === "none") ? "block" : "none"; };
 
     var layersData = { jalan: L.layerGroup().addTo(map), landuse: L.layerGroup().addTo(map), tower: L.layerGroup().addTo(map), wilayah: L.layerGroup().addTo(map), shp_poligon: L.layerGroup().addTo(map), shp_garis: L.layerGroup().addTo(map), shp_titik: L.layerGroup().addTo(map) };
 
-    // --- LOGIKA TOC ACCORDION (BUKA/TUTUP) ---
     function toggleTOCList(listId, el) {
         var list = document.getElementById(listId);
-        if(list.style.display === 'block') { list.style.display = 'none'; el.innerHTML = el.innerHTML.replace('▼', '▶').replace('(Tutup List)', '(Buka List)'); } 
-        else { list.style.display = 'block'; el.innerHTML = el.innerHTML.replace('▶', '▼').replace('(Buka List)', '(Tutup List)'); }
+        if(list.style.display === 'block') { list.style.display = 'none'; el.innerHTML = el.innerHTML.replace('▼', '▶').replace('(Tutup)', '(Buka)'); } 
+        else { list.style.display = 'block'; el.innerHTML = el.innerHTML.replace('▶', '▼').replace('(Buka)', '(Tutup)'); }
     }
 
-    function toggleLayerVis(nama, btn) { var lyr = layersData[nama]; if (map.hasLayer(lyr)) { map.removeLayer(lyr); btn.innerHTML = "Show Layer"; } else { map.addLayer(lyr); btn.innerHTML = "Hide Layer"; } }
+    function toggleTabelVis(nama, btn) { var lyr = layersData[nama]; if (map.hasLayer(lyr)) { map.removeLayer(lyr); btn.innerHTML = "Show"; } else { map.addLayer(lyr); btn.innerHTML = "Hide"; } }
 
     function cariWilayah() {
         const query = document.getElementById('inputCariWilayah').value; if (!query) return; const btn = document.getElementById('btnCariWilayah'); btn.innerHTML = '⏳';
@@ -417,30 +415,105 @@
         circleLokasi = L.circle(e.latlng, e.accuracy, { color: '#2563eb', fillOpacity: 0.2 }).addTo(map); markerLokasi = L.marker(e.latlng).addTo(map).bindPopup("Lokasi Anda").openPopup();
     });
 
-    // --- LOGIKA GANTI WARNA OTOMATIS & MANUAL ---
+    // --- SITEM WARNA & GROUPING TOC BARU (PER FILE) ---
     function gantiWarnaManual(tabel, id, newColor) {
         let pkKolom = tabel.startsWith('shp_') ? 'id' : 'id_' + tabel;
         let queryUpdate = `UPDATE ${tabel} SET properties = COALESCE(properties, '{}'::jsonb) || '{"color": "${newColor}"}'::jsonb WHERE ${pkKolom} = '${id}'`;
         fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: queryUpdate }) })
-        .then(() => {
-            layersData[tabel].eachLayer(layerGroup => {
-                if(layerGroup.featureId == id) { layerGroup.eachLayer(layer => { if(layer.setStyle) layer.setStyle({color: newColor, fillColor: newColor}); }); }
-            });
-        });
+        .then(() => { layersData[tabel].eachLayer(layerGroup => { if(layerGroup.featureId == id) { layerGroup.eachLayer(layer => { if(layer.setStyle) layer.setStyle({color: newColor, fillColor: newColor}); }); } }); });
     }
 
-    function autoColorLayer(tabel) {
-        let pkKolom = tabel.startsWith('shp_') ? 'id' : 'id_' + tabel;
-        let queryUpdate = `UPDATE ${tabel} SET properties = COALESCE(properties, '{}'::jsonb) || jsonb_build_object('color', (ARRAY['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff', '#000000', '#ff00ff', '#00ff00', '#0000ff', '#ffff00', '#00ffff', '#ffa500', '#8a2be2', '#7fff00'])[floor(random() * 30 + 1)::int])`;
+    function autoColorGroup(tabel, groupName) {
+        // HANYA MENGUBAH WARNA DATA YANG NAMA FILE/LAYERNYA SESUAI DENGAN FOLDER YANG DIKLIK
+        let col = tabel.startsWith('shp_') ? 'nama_layer' : (tabel==='jalan'?'nama_jalan':(tabel==='landuse'?'penggunaan':(tabel==='wilayah'?'nama_kabupaten':'id_provider')));
+        let safeName = groupName.replace(/'/g, "''"); // Aman dari tanda kutip
+        let queryUpdate = `UPDATE ${tabel} SET properties = COALESCE(properties, '{}'::jsonb) || jsonb_build_object('color', (ARRAY['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff', '#000000', '#ff00ff', '#00ff00', '#0000ff', '#ffff00', '#00ffff', '#ffa500', '#8a2be2', '#7fff00'])[floor(random() * 30 + 1)::int]) WHERE ${col} = '${safeName}'`;
         fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: queryUpdate }) }).then(() => refreshSemuaData());
     }
 
-    // --- PEMBACA NAMA DESA OTOMATIS DARI SHP ---
-    function muatDataPeta(tabel, layerGroup, warnaLayerDefault) { fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: `SELECT *, ST_AsGeoJSON(geom) as geometry FROM ${tabel}` }) }).then(res => res.json()).then(data => { let listContainer = document.getElementById(`list-${tabel}`); if(listContainer) listContainer.innerHTML = ''; if (data.data) { data.data.forEach(row => { if (row.geometry) { let props = typeof row.properties === 'string' ? JSON.parse(row.properties || '{}') : (row.properties || {}); let itemColor = props.color || warnaLayerDefault; let p = `<div style="text-transform:uppercase; font-weight:bold; margin-bottom:5px; border-bottom:1px solid var(--border-color); padding-bottom:5px; color:var(--text-main);">${tabel}</div><table class="popup-table">`; for(let k in row) { if(k !== 'geometry' && k !== 'geom') { if(k === 'properties' && row[k]) { let propsObj = typeof row[k] === 'string' ? JSON.parse(row[k]) : row[k]; for(let pk in propsObj) p += `<tr><td>${pk}</td><td>: ${propsObj[pk]}</td></tr>`; } else { p += `<tr><td>${k}</td><td>: ${row[k] !== null ? row[k] : '-'}</td></tr>`; } } } p += `</table>`; let leafletLayer = L.geoJSON(JSON.parse(row.geometry), { style: function() { return { color: itemColor, fillColor: itemColor, weight: row.geometry.includes("Polygon") ? 1 : 2, fillOpacity: 0.5 }; }, pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 5, fillColor: itemColor, color: "#fff", weight: 1, fillOpacity: 0.8 }) }); let pkField = tabel.startsWith('shp_') ? 'id' : 'id_' + tabel; let featureId = row[pkField]; leafletLayer.featureId = featureId; leafletLayer.bindPopup(p).addTo(layerGroup); if(listContainer) { let attrName = props.NAMOBJ || props.WADMKD || props.DESA || props.KELURAHAN || props.WADMKC || props.KECAMATAN || props.NAMA || props.NAME || props.Name || props.nama || props.KABUPATEN; let baseName = row.nama_layer || row.nama_jalan || row.penggunaan || row.nama_kabupaten || row.id_provider; let featureName = attrName ? `${baseName} - ${attrName}` : (baseName ? `${baseName} (ID: ${featureId})` : `Data ${featureId}`); listContainer.innerHTML += `<div style="display:flex; align-items:center; justify-content:space-between; font-size:10px; margin-bottom:4px; padding-bottom:4px; border-bottom:1px dashed #cbd5e1;"><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:230px;" title="${featureName}">${featureName}</span><input type="color" value="${itemColor}" onchange="gantiWarnaManual('${tabel}', '${featureId}', this.value)" style="padding:0; border:1px solid #cbd5e1; width:22px; height:22px; cursor:pointer; border-radius:3px;"></div>`; } } }); } }); }
+    function toggleGroupVis(tabel, groupName) {
+        layersData[tabel].eachLayer(l => { if(l.groupName === groupName) { if(map.hasLayer(l)) map.removeLayer(l); else map.addLayer(l); } });
+    }
+
+    function zoomKeGroup(tabel, groupName) {
+        var b = L.latLngBounds(); 
+        layersData[tabel].eachLayer(l => { if (l.groupName === groupName) { if (l.getBounds) b.extend(l.getBounds()); else if (l.getLatLng) b.extend(l.getLatLng()); } }); 
+        if (b.isValid()) map.flyToBounds(b, { padding: [40, 40] }); 
+    }
+
+    // --- PEMBACA NAMA DESA & PEMBUAT STRUKTUR FOLDER ---
+    function muatDataPeta(tabel, layerGroup, warnaLayerDefault) { 
+        fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: `SELECT *, ST_AsGeoJSON(geom) as geometry FROM ${tabel}` }) })
+        .then(res => res.json()).then(data => { 
+            let listContainer = document.getElementById(`list-${tabel}`);
+            if(listContainer) listContainer.innerHTML = '';
+            
+            let groupedFeatures = {}; // Wadah untuk memisahkan HTML per nama file
+
+            if (data.data) { 
+                data.data.forEach(row => { 
+                    if (row.geometry) { 
+                        let props = typeof row.properties === 'string' ? JSON.parse(row.properties || '{}') : (row.properties || {});
+                        let itemColor = props.color || warnaLayerDefault;
+
+                        let p = `<div style="text-transform:uppercase; font-weight:bold; margin-bottom:5px; border-bottom:1px solid var(--border-color); padding-bottom:5px; color:var(--text-main);">${tabel}</div><table class="popup-table">`; 
+                        for(let k in row) { if(k !== 'geometry' && k !== 'geom') { if(k === 'properties' && row[k]) { let propsObj = typeof row[k] === 'string' ? JSON.parse(row[k]) : row[k]; for(let pk in propsObj) p += `<tr><td>${pk}</td><td>: ${propsObj[pk]}</td></tr>`; } else { p += `<tr><td>${k}</td><td>: ${row[k] !== null ? row[k] : '-'}</td></tr>`; } } } 
+                        p += `</table>`; 
+                        
+                        let leafletLayer = L.geoJSON(JSON.parse(row.geometry), { style: function() { return { color: itemColor, fillColor: itemColor, weight: row.geometry.includes("Polygon") ? 1 : 2, fillOpacity: 0.5 }; }, pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 5, fillColor: itemColor, color: "#fff", weight: 1, fillOpacity: 0.8 }) });
+                        
+                        let pkField = tabel.startsWith('shp_') ? 'id' : 'id_' + tabel;
+                        let featureId = row[pkField];
+                        
+                        // Menentukan nama Folder (berdasarkan nama file shp)
+                        let baseName = row.nama_layer || row.nama_jalan || row.penggunaan || row.nama_kabupaten || row.id_provider || 'Data Umum';
+                        leafletLayer.featureId = featureId;
+                        leafletLayer.groupName = baseName;
+                        leafletLayer.bindPopup(p).addTo(layerGroup); 
+
+                        // Menentukan nama data di dalam folder (mengambil nama desa dari DBF)
+                        let attrName = props.NAMOBJ || props.WADMKD || props.DESA || props.KELURAHAN || props.WADMKC || props.KECAMATAN || props.NAMA || props.NAME || props.Name || props.nama || props.KABUPATEN;
+                        let featureDisplayName = attrName ? attrName : `Data ID: ${featureId}`;
+
+                        if(!groupedFeatures[baseName]) groupedFeatures[baseName] = '';
+                        groupedFeatures[baseName] += `
+                            <div style="display:flex; align-items:center; justify-content:space-between; font-size:10px; margin-bottom:6px; padding-bottom:6px; border-bottom:1px dashed #cbd5e1; padding-left:4px;">
+                                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;" title="${featureDisplayName}">📍 ${featureDisplayName}</span>
+                                <input type="color" value="${itemColor}" onchange="gantiWarnaManual('${tabel}', '${featureId}', this.value)" style="padding:0; border:1px solid #cbd5e1; width:24px; height:24px; cursor:pointer; border-radius:4px;">
+                            </div>`;
+                    } 
+                }); 
+
+                // Membuat HTML Accordion Folder
+                let finalHtml = '';
+                for(let gName in groupedFeatures) {
+                    let safeGroupId = `group-${tabel}-${gName.replace(/[^a-zA-Z0-9]/g, '')}`;
+                    let safeStrName = gName.replace(/'/g, "\\'"); // Aman untuk tanda kutip
+                    finalHtml += `
+                        <div style="margin-top: 8px; border: 1px solid #94a3b8; border-radius: 6px; background: #ffffff; overflow:hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="font-size: 11px; font-weight: 700; padding: 8px; background: #e2e8f0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom:1px solid #cbd5e1; color: var(--text-main);" onclick="toggleTOCList('${safeGroupId}', this)">
+                                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;">📁 File: ${gName}</span>
+                                <span style="font-size:9px; color:var(--text-muted);">(Buka)</span>
+                            </div>
+                            <div style="display:flex; gap:4px; padding:6px; background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
+                                <button class="btn-toc-action" onclick="toggleGroupVis('${tabel}', '${safeStrName}')" style="font-size:9px; padding:4px;">👁️ Hide</button>
+                                <button class="btn-toc-action" onclick="zoomKeGroup('${tabel}', '${safeStrName}')" style="font-size:9px; padding:4px;">🎯 Zoom</button>
+                                <button class="btn-toc-action" onclick="autoColorGroup('${tabel}', '${safeStrName}')" style="font-size:9px; padding:4px; background:var(--accent); color:#fff; border:none; font-weight:bold;">🎨 Auto Color</button>
+                            </div>
+                            <div id="${safeGroupId}" style="display: none; max-height: 250px; overflow-y: auto; padding: 6px; background:#fff;">
+                                ${groupedFeatures[gName]}
+                            </div>
+                        </div>
+                    `;
+                }
+                if(listContainer) listContainer.innerHTML = finalHtml;
+            } 
+        }); 
+    }
 
     function zoomKeLayer(n) { var b = L.latLngBounds(); layersData[n].eachLayer(l => { if (l.getBounds) b.extend(l.getBounds()); else if (l.getLatLng) b.extend(l.getLatLng()); }); if (b.isValid()) map.flyToBounds(b, { padding: [40, 40] }); }
 
-    // --- SISA FITUR (DRONE, BATIMETRI, DLL) ---
+    // --- SISA FITUR ---
     var isDrawingDroneMode = false, currentDronePolygon = null, tempDroneLayer = L.featureGroup().addTo(map);
     function inisiasiModeDrone() { alert("Silakan gambar area poligon di peta untuk batas terbang Drone."); isDrawingDroneMode = true; map.pm.enableDraw('Polygon', { snappable: false, hintlineStyle: { color: '#f59e0b', dashArray: '5,5' }, pathOptions: { color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.2 } }); }
     function updateLivePreview() { tempDroneLayer.clearLayers(); if(!currentDronePolygon) return; var config = { nama: document.getElementById('droneNama').value || "Misi_Drone", spacing: parseFloat(document.getElementById('droneSpacing').value) || 30, angle: parseFloat(document.getElementById('droneAngle').value) || 0, margin: parseFloat(document.getElementById('droneMargin').value) || 0, altitude: parseFloat(document.getElementById('droneAlt').value) || 100, speed: parseFloat(document.getElementById('droneSpeed').value) || 10 }; document.getElementById('lblAngle').innerText = config.angle; var features = algoritmaJalurDrone(currentDronePolygon.toGeoJSON(), config); if(features.length > 0) { var f = features[0]; L.geoJSON(f, { style: { color: '#10b981', weight: 2 } }).addTo(tempDroneLayer); var coords = f.geometry.coordinates; if(coords.length > 0) { L.circleMarker([coords[0][1], coords[0][0]], {radius: 6, color: '#fff', fillColor: '#10b981', fillOpacity: 1, weight: 2}).bindTooltip("START", {permanent:true, direction:'right'}).addTo(tempDroneLayer); L.circleMarker([coords[coords.length-1][1], coords[coords.length-1][0]], {radius: 6, color: '#fff', fillColor: '#ef4444', fillOpacity: 1, weight: 2}).bindTooltip("END", {permanent:true, direction:'right'}).addTo(tempDroneLayer); } document.getElementById('droneStats').innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Total Jarak:</span> <b style="color:#fff;">${f.properties.total_jarak_km} km</b></div><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Est. Waktu:</span> <b style="color:#fff;">${f.properties.estimasi_waktu_menit} Menit</b></div><div style="display:flex; justify-content:space-between;"><span>Jalur (Waypoints):</span> <b style="color:#fff;">${coords.length} Titik</b></div>`; } else { document.getElementById('droneStats').innerHTML = `<span style="color:var(--danger)">Area poligon terlalu sempit.</span>`; } }
