@@ -1,5 +1,5 @@
 const express = require('express');
-const { Pool } = require('pg'); // Hanya ditulis satu kali!
+const { Pool } = require('pg');
 const cors = require('cors');
 const xlsx = require('xlsx');
 const fs = require('fs');
@@ -7,7 +7,6 @@ const path = require('path');
 const app = express();
 
 // --- VAKSIN RAILWAY ---
-// Mencegah error 'ENOTFOUND postgres' akibat variabel bawaan Railway yang bentrok
 delete process.env.PGHOST;
 delete process.env.PGUSER;
 delete process.env.PGPASSWORD;
@@ -28,17 +27,12 @@ if (!process.env.DATABASE_URL) {
 // KONEKSI DATABASE
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false // Wajib untuk Supabase
-    }
+    ssl: { rejectUnauthorized: false }
 });
 
 pool.connect((err, client, done) => {
-    if (err) {
-        console.error('⛔ Gagal terhubung ke database:', err.stack);
-    } else {
-        console.log('✅ Berhasil terhubung ke Supabase!');
-    }
+    if (err) console.error('⛔ Gagal terhubung ke database:', err.stack);
+    else console.log('✅ Berhasil terhubung ke Supabase!');
     if (done) done();
 });
 
@@ -52,7 +46,6 @@ pool.query(`
     );
 `).then(() => console.log("✅ Tabel users siap.")).catch(console.error);
 
-// Session Memori untuk User Online
 const activeUsers = new Map();
 
 setInterval(() => {
@@ -79,9 +72,7 @@ app.post('/api/login', async (req, res) => {
             const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
             
             if (result.rows.length > 0) {
-                if (result.rows[0].password !== password) {
-                    return res.status(401).json({ error: 'Password salah untuk user ini!' });
-                }
+                if (result.rows[0].password !== password) return res.status(401).json({ error: 'Password salah untuk user ini!' });
             } else {
                 await pool.query('INSERT INTO users (username, password, role) VALUES ($1, $2, $3)', [username, password, 'user']);
             }
@@ -123,7 +114,6 @@ app.post('/api/save-feature', async (req, res) => {
             query = `INSERT INTO tower (id_tower, id_provider, geom) VALUES ($1, $2, ST_Force2D(ST_SetSRID(ST_GeomFromGeoJSON($3), 4326))) RETURNING id_tower as id`;
             values = [attr.id, attr.id_provider, JSON.stringify(geometry)];
         } else if (['shp_titik', 'shp_garis', 'shp_poligon'].includes(tabel)) {
-            // Perbaikan: Menambahkan parameter default properties "{}" agar sesuai dengan struktur tabel
             query = `INSERT INTO ${tabel} (nama_layer, pengupload, properties, geom) VALUES ($1, 'Admin', '{}', ST_Force2D(ST_SetSRID(ST_GeomFromGeoJSON($2), 4326))) RETURNING id`;
             values = [attr.nama_layer, JSON.stringify(geometry)];
         } else {
@@ -207,13 +197,15 @@ app.post('/api/delete-feature', async (req, res) => {
     }
 });
 
-// --- FITUR FILTER & EXPORT ---
+// --- PERBAIKAN: FITUR FILTER & EXPORT MULTIPLE DATA ---
 const validCols = ['nama_layer', 'nama_jalan', 'penggunaan', 'nama_kabupaten', 'id_provider'];
 
 function buildWhereClause(reqQuery) {
     const { col, val } = reqQuery;
     if (col && validCols.includes(col) && val && val !== 'ALL') {
-        return { clause: `WHERE ${col} = $1`, params: [val] };
+        const valuesArr = val.split(',');
+        const placeholders = valuesArr.map((v, i) => `$${i + 1}`).join(', ');
+        return { clause: `WHERE ${col} IN (${placeholders})`, params: valuesArr };
     }
     return { clause: '', params: [] };
 }
@@ -249,7 +241,7 @@ app.get('/api/export-excel/:tabel', async (req, res) => {
         xlsx.utils.book_append_sheet(workbook, worksheet, "Data_Export");
 
         const excelBuffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-        const namaFile = req.query.val && req.query.val !== 'ALL' ? `${req.query.val}.xlsx` : `${tabel}_export.xlsx`;
+        const namaFile = req.query.val && req.query.val !== 'ALL' ? (req.query.val.includes(',') ? `${tabel}_multi.xlsx` : `${req.query.val}.xlsx`) : `${tabel}_export.xlsx`;
 
         res.setHeader('Content-Disposition', `attachment; filename="${namaFile}"`);
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -274,7 +266,7 @@ app.get('/api/export-geojson/:tabel', async (req, res) => {
             ) features;
         `;
         const result = await pool.query(query, params);
-        const namaFile = req.query.val && req.query.val !== 'ALL' ? `${req.query.val}.json` : `${tabel}_export.json`;
+        const namaFile = req.query.val && req.query.val !== 'ALL' ? (req.query.val.includes(',') ? `${tabel}_multi.json` : `${req.query.val}.json`) : `${tabel}_export.json`;
         
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Content-Disposition', `attachment; filename="${namaFile}"`);
@@ -287,12 +279,10 @@ app.get('/api/export-geojson/:tabel', async (req, res) => {
 app.get('/api/export-kml/:tabel', async (req, res) => {
     const { tabel } = req.params;
     const tabelValid = ['jalan', 'landuse', 'tower', 'wilayah', 'shp_titik', 'shp_garis', 'shp_poligon'];
-    
     if (!tabelValid.includes(tabel)) return res.status(400).send('Tabel tidak valid');
 
     try {
         const { clause, params } = buildWhereClause(req.query);
-        
         const query = `
             SELECT
                 '<?xml version="1.0" encoding="UTF-8"?>
@@ -313,7 +303,7 @@ app.get('/api/export-kml/:tabel', async (req, res) => {
         `;
 
         const result = await pool.query(query, params);
-        const namaFile = req.query.val && req.query.val !== 'ALL' ? `${req.query.val}.kml` : `${tabel}_export.kml`;
+        const namaFile = req.query.val && req.query.val !== 'ALL' ? (req.query.val.includes(',') ? `${tabel}_multi.kml` : `${req.query.val}.kml`) : `${tabel}_export.kml`;
 
         res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
         res.setHeader('Content-Disposition', `attachment; filename="${namaFile}"`);
@@ -324,6 +314,5 @@ app.get('/api/export-kml/:tabel', async (req, res) => {
     }
 });
 
-// PORT DINAMIS UNTUK CLOUD
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Server WebGIS berjalan di port ${PORT}`));
