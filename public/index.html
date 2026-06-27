@@ -464,10 +464,10 @@
     function simpanMisiDrone() { if(!currentDronePolygon) return; var config = { nama: document.getElementById('droneNama').value || "Misi_Drone", spacing: parseFloat(document.getElementById('droneSpacing').value) || 30, angle: parseFloat(document.getElementById('droneAngle').value) || 0, margin: parseFloat(document.getElementById('droneMargin').value) || 0, altitude: parseFloat(document.getElementById('droneAlt').value) || 100, speed: parseFloat(document.getElementById('droneSpeed').value) || 10 }; var features = algoritmaJalurDrone(currentDronePolygon.toGeoJSON(), config); if(features.length === 0) return alert("Gagal menyimpan rute! Pastikan area memadai."); fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: config.nama, pengupload: currentUser.username, features: features, geom_type: 'LineString' }) }).then(res => res.json()).then(d => { alert("Rute Misi Drone Berhasil Disimpan ke Tabel SHP Garis!"); batalMisiDrone(); refreshSemuaData(); }); }
     function batalMisiDrone() { document.getElementById('modalDronePlanner').style.display = 'none'; if(currentDronePolygon) map.removeLayer(currentDronePolygon); tempDroneLayer.clearLayers(); currentDronePolygon = null; }
 
-    // --- ALGORITMA BATIMETRI FINAL (100% LURUS, TIDAK MENGERUCUT, BEZIER ORTOGONAL, LAJUR LINTAS AKTIF) ---
+    // --- PEMBARUAN: ALGORITMA BATIMETRI FIX 100% ---
     var isDrawingBatimetri = false, lastBatiPolyGeoJSON = null, lastBatiConfig = null, batiConfig = { nama: "", interval: 50, crossInterval: 0, curve: 100, mainOrient: "longest|inward" };
     
-    function bukaModalBatimetri() { document.getElementById('modalBatimetri').style.display = 'block'; if (lastBatiPolyGeoJSON) { document.getElementById('batiEditSection').style.display = 'block'; document.getElementById('editBatiInterval').value = lastBatiConfig.interval; document.getElementById('editBatiCurve').value = lastBatiConfig.curve; } }
+    function bukaModalBatimetri() { document.getElementById('modalBatimetri').style.display = 'block'; if (lastBatiPolyGeoJSON) { document.getElementById('batiEditSection').style.display = 'block'; document.getElementById('editBatiInterval').value = lastBatiConfig.interval; document.getElementById('editBatiCrossInterval').value = lastBatiConfig.crossInterval; document.getElementById('editBatiCurve').value = lastBatiConfig.curve; } }
     
     function mulaiGambarBatimetri() { 
         batiConfig.nama = document.getElementById('batiNama').value; batiConfig.interval = parseFloat(document.getElementById('batiInterval').value); batiConfig.crossInterval = parseFloat(document.getElementById('batiCrossInterval').value); batiConfig.curve = parseFloat(document.getElementById('batiCurve').value); batiConfig.mainOrient = document.getElementById('batiMainOrient').value; 
@@ -477,35 +477,52 @@
     
     function generateBatimetriFeatures(polyData, config) {
         var centroid = turf.centroid(polyData);
-        function getLongestEdgeAngle(poly) { var coords = turf.getCoords(poly)[0]; var maxD = 0, angle = 0; for(var i=0; i<coords.length-1; i++) { var p1 = turf.point(coords[i]), p2 = turf.point(coords[i+1]), d = turf.distance(p1, p2); if(d > maxD) { maxD = d; angle = turf.bearing(p1, p2); } } return angle; }
+        function getLongestEdgeAngle(poly) { 
+            var coords = turf.getCoords(poly)[0]; var maxD = 0, angle = 0; 
+            for(var i=0; i<coords.length-1; i++) { 
+                var p1 = turf.point(coords[i]), p2 = turf.point(coords[i+1]), d = turf.distance(p1, p2); 
+                if(d > maxD) { maxD = d; angle = turf.bearing(p1, p2); } 
+            } 
+            return angle; 
+        }
         
+        var isOto = config.mainOrient.startsWith('longest');
         var baseAngle = 0;
-        if (config.mainOrient.startsWith('longest')) { baseAngle = getLongestEdgeAngle(polyData); } 
-        else if (config.mainOrient.startsWith('horizontal')) { baseAngle = 90; } 
-        else { baseAngle = 0; }
+        if (isOto) {
+            baseAngle = getLongestEdgeAngle(polyData);
+            if (baseAngle > 90) baseAngle -= 180; 
+            if (baseAngle < -90) baseAngle += 180;
+        } else if (config.mainOrient.startsWith('horizontal')) { 
+            baseAngle = 90; 
+        } else { 
+            baseAngle = 0; 
+        }
 
         function buildContinuousTrack(angleDeg, intv, curvePercent) {
             if(!intv || intv <= 0) return null;
-            // 1. Putar poligon menjadi datar
             var flatPoly = turf.transformRotate(polyData, -angleDeg, {pivot: centroid});
-            var polyLine = turf.polygonToLine(flatPoly);
-            var bbox = turf.bbox(flatPoly); var minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
+            var bbox = turf.bbox(flatPoly); 
+            var minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
             
-            // 2. Buat garis lurus (slicing)
             var ptMin = turf.point([minX, minY]), ptMaxY = turf.point([minX, maxY]);
             var totalHeight = turf.distance(ptMin, ptMaxY, {units: 'meters'});
             var numLinesReal = Math.floor(totalHeight / intv);
-            var row_segments = []; var overshoot = 10; 
+            var row_segments = []; 
+            var overshoot = 10; 
 
             for(var i=0; i<=numLinesReal; i++) {
                 var yPt = turf.destination(ptMin, (i * intv) + (intv/2), 0, {units: 'meters'});
                 var y = yPt.geometry.coordinates[1];
-                var sweepLine = turf.lineString([[minX - 1, y], [maxX + 1, y]]); 
-                var intersects = turf.lineIntersect(sweepLine, polyLine);
+                var sweepLine = turf.lineString([[minX - 50, y], [maxX + 50, y]]); 
+                var intersects = turf.lineIntersect(sweepLine, flatPoly);
 
                 var x_coords = [];
-                if(intersects.features.length > 0) { intersects.features.forEach(f => x_coords.push(f.geometry.coordinates[0])); } 
-                else if (turf.booleanPointInPolygon(turf.point([(minX+maxX)/2, y]), flatPoly)) { x_coords = [minX, maxX]; }
+                if(intersects.features.length > 0) { 
+                    intersects.features.forEach(f => x_coords.push(f.geometry.coordinates[0])); 
+                } 
+                else if (turf.booleanPointInPolygon(turf.point([(minX+maxX)/2, y]), flatPoly)) { 
+                    x_coords = [minX, maxX]; 
+                }
 
                 if(x_coords.length > 0) {
                     var cMinX = Math.min(...x_coords); var cMaxX = Math.max(...x_coords);
@@ -517,7 +534,6 @@
 
             if(row_segments.length < 2) return null;
 
-            // 3. Jahit garis dengan Bezier (ZigZag ortogonal sempurna)
             var continuousCoords = []; var goingRight = true;
             for(var i=0; i<row_segments.length; i++) {
                 var row = row_segments[i];
@@ -533,7 +549,6 @@
                         var ctrlBearing = isRightBulge ? 90 : -90; 
                         var midY = (p1[1] + p2[1]) / 2;
                         
-                        // Kunci: Jangan biarkan belokan menjorok ke dalam (mengerucut)
                         var baseBulgeX = isRightBulge ? Math.max(p1[0], p2[0]) : Math.min(p1[0], p2[0]);
                         var ctrlPt = turf.destination(turf.point([baseBulgeX, midY]), ctrlDist, ctrlBearing, {units: 'meters'}).geometry.coordinates;
 
@@ -552,17 +567,15 @@
                 goingRight = !goingRight;
             }
 
-            // 4. Putar kembali ke alam nyata
             return turf.transformRotate(turf.lineString(continuousCoords), angleDeg, {pivot: centroid});
         }
 
         var results = [];
-        var mainLine = buildTrack(baseAngle, config.interval, config.curve);
+        var mainLine = buildContinuousTrack(baseAngle, config.interval, config.curve);
         if(mainLine) { mainLine.properties = { type: "Main Lines" }; results.push(mainLine); }
 
-        // LAJUR LINTAS DIAKTIFKAN KEMBALI
         if(config.crossInterval > 0) {
-            var crossLine = buildTrack(baseAngle + 90, config.crossInterval, config.curve);
+            var crossLine = buildContinuousTrack(baseAngle + 90, config.crossInterval, config.curve);
             if(crossLine) { crossLine.properties = { type: "Cross Lines" }; results.push(crossLine); }
         }
 
