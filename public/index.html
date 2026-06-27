@@ -465,12 +465,14 @@
     function batalMisiDrone() { document.getElementById('modalDronePlanner').style.display = 'none'; if(currentDronePolygon) map.removeLayer(currentDronePolygon); tempDroneLayer.clearLayers(); currentDronePolygon = null; }
 
     // --- ALGORITMA BATIMETRI FINAL: CONTINUOUS LINE, OTOMATIS SISI TERPANJANG, MANUAL, & U-TURN BEZIER ---
-    var isDrawingBatimetri = false, lastBatiPolyGeoJSON = null, lastBatiConfig = null, batiConfig = { nama: "", interval: 50, crossInterval: 0, curve: 100, mainOrient: "longest|inward", crossOrient: "vertical|left-right" };
-    function bukaModalBatimetri() { document.getElementById('modalBatimetri').style.display = 'block'; if (lastBatiPolyGeoJSON) { document.getElementById('batiEditSection').style.display = 'block'; document.getElementById('editBatiInterval').value = lastBatiConfig.interval; document.getElementById('editBatiCrossInterval').value = lastBatiConfig.crossInterval; document.getElementById('editBatiCurve').value = lastBatiConfig.curve; } }
+    var isDrawingBatimetri = false, lastBatiPolyGeoJSON = null, lastBatiConfig = null, batiConfig = { nama: "", interval: 50, crossInterval: 0, curve: 100, mainOrient: "longest|inward" };
+    
+    function bukaModalBatimetri() { document.getElementById('modalBatimetri').style.display = 'block'; if (lastBatiPolyGeoJSON) { document.getElementById('batiEditSection').style.display = 'block'; document.getElementById('editBatiInterval').value = lastBatiConfig.interval; document.getElementById('editBatiCurve').value = lastBatiConfig.curve; } }
     
     function mulaiGambarBatimetri() { 
-        batiConfig.nama = document.getElementById('batiNama').value; batiConfig.interval = parseFloat(document.getElementById('batiInterval').value); batiConfig.crossInterval = parseFloat(document.getElementById('batiCrossInterval').value); batiConfig.curve = parseFloat(document.getElementById('batiCurve').value); batiConfig.mainOrient = document.getElementById('batiMainOrient').value; batiConfig.crossOrient = document.getElementById('batiCrossOrient').value; 
-        if(!batiConfig.nama || !batiConfig.interval) return alert("Lengkapi data!"); document.getElementById('modalBatimetri').style.display = 'none'; isDrawingBatimetri = true; map.pm.enableDraw('Polygon', { snappable: false }); 
+        batiConfig.nama = document.getElementById('batiNama').value; batiConfig.interval = parseFloat(document.getElementById('batiInterval').value); batiConfig.curve = parseFloat(document.getElementById('batiCurve').value); batiConfig.mainOrient = document.getElementById('batiMainOrient').value; 
+        if(!batiConfig.nama || !batiConfig.interval) return alert("Lengkapi form Nama Layer dan Interval!"); 
+        document.getElementById('modalBatimetri').style.display = 'none'; isDrawingBatimetri = true; map.pm.enableDraw('Polygon', { snappable: false }); 
     }
     
     function generateBatimetriFeatures(polyData, config) {
@@ -481,42 +483,57 @@
         if (config.mainOrient.startsWith('longest')) {
             baseAngle = getLongestEdgeAngle(polyData);
             if (baseAngle > 90) baseAngle -= 180; if (baseAngle < -90) baseAngle += 180;
-        } else if (config.mainOrient.startsWith('horizontal')) { baseAngle = 90; } else { baseAngle = 0; }
+        } else if (config.mainOrient === 'horizontal|top-down') { baseAngle = 90; } else if (config.mainOrient === 'horizontal|bottom-up') { baseAngle = 90; } else { baseAngle = 0; }
 
-        function buildContinuousTrack(angleDeg, intv, curvePercent) {
+        function buildContinuousTrack(angleDeg, intv, curvePercent, isAuto, manualMode) {
             if(!intv || intv <= 0) return null;
+            // Memutar poligon menjadi datar terhadap layar agar mudah diiris
             var flatPoly = turf.transformRotate(polyData, -angleDeg, {pivot: centroid});
             var bbox = turf.bbox(flatPoly); var minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
             var overshoot = intv * 0.5; if (overshoot < 10) overshoot = 10;
             var row_segments = [];
+            
+            // Proses pengirisan (Slicing) Bounding Box
             var ptMin = turf.point([minX, minY]), ptMaxY = turf.point([minX, maxY]);
             var totalHeight = turf.distance(ptMin, ptMaxY, {units: 'meters'}), numLines = Math.floor(totalHeight / intv);
             
+            var reverseOrder = false;
+            if (!isAuto) {
+                if (manualMode === 'horizontal|top-down' || manualMode === 'vertical|right-left') reverseOrder = true;
+            }
+
             for (let i = 0; i <= numLines; i++) {
-                var currentY_pt = turf.destination(ptMin, i * intv + (intv/2), 0, {units: 'meters'});
+                var stepDist = reverseOrder ? (totalHeight - (i * intv) - (intv/2)) : (i * intv + (intv/2));
+                var currentY_pt = turf.destination(ptMin, stepDist, 0, {units: 'meters'});
                 var y = currentY_pt.geometry.coordinates[1];
+                
                 var pLeftBound = turf.destination(turf.point([minX, y]), 10000, -90, {units: 'meters'}).geometry.coordinates;
                 var pRightBound = turf.destination(turf.point([maxX, y]), 10000, 90, {units: 'meters'}).geometry.coordinates;
                 var sweepLine = turf.lineString([pLeftBound, pRightBound]);
-                var intersections = turf.lineIntersect(sweepLine, flatPoly);
-                var x_coords = [];
-                if (intersections.features.length > 0) { intersections.features.forEach(f => x_coords.push(f.geometry.coordinates[0])); } 
-                else { if (turf.booleanPointInPolygon(turf.point([(minX+maxX)/2, y]), flatPoly)) { x_coords.push(minX); x_coords.push(maxX); } }
                 
-                if (x_coords.length > 0) {
-                    var min_int_X = Math.min(...x_coords), max_int_X = Math.max(...x_coords);
-                    var finalLeft = turf.destination(turf.point([min_int_X, y]), overshoot, -90, {units: 'meters'}).geometry.coordinates;
-                    var finalRight = turf.destination(turf.point([max_int_X, y]), overshoot, 90, {units: 'meters'}).geometry.coordinates;
+                var split = null; try { split = turf.lineSplit(sweepLine, flatPoly); } catch(e){}
+                var segs = [];
+                if(split && split.features.length > 0) { split.features.forEach(s => { if(turf.booleanPointInPolygon(turf.along(s, turf.length(s)/2), flatPoly)) segs.push(s); }); } 
+                else { if(turf.booleanPointInPolygon(turf.along(sweepLine, turf.length(sweepLine)/2), flatPoly)) segs.push(sweepLine); }
+                
+                if (segs.length > 0) {
+                    segs.sort((a,b) => turf.length(b) - turf.length(a));
+                    var rawCoords = segs[0].geometry.coordinates;
+                    var finalLeft = turf.destination(turf.point(rawCoords[0]), overshoot, -90, {units: 'meters'}).geometry.coordinates;
+                    var finalRight = turf.destination(turf.point(rawCoords[rawCoords.length-1]), overshoot, 90, {units: 'meters'}).geometry.coordinates;
                     row_segments.push({ left: finalLeft, right: finalRight, y: y });
                 }
             }
+            
             if (row_segments.length === 0) return null;
             var continuousCoords = [], goingRight = true;
+            
             for (let i = 0; i < row_segments.length; i++) {
                 let row = row_segments[i];
                 if (i > 0) {
                     let prev_row = row_segments[i-1], isRightBulge = !goingRight; 
                     let p_start = isRightBulge ? prev_row.right : prev_row.left, p_end = isRightBulge ? row.right : row.left;
+                    
                     if (curvePercent > 0) {
                         let dist = turf.distance(turf.point(p_start), turf.point(p_end), {units: 'meters'}), pushDist = (dist / 2) * (curvePercent / 100);
                         let midPt = turf.midpoint(turf.point(p_start), turf.point(p_end)), bear = turf.bearing(turf.point(p_start), turf.point(p_end));
@@ -533,17 +550,18 @@
                 goingRight = !goingRight;
             }
             if (continuousCoords.length < 2) return null;
+            // Putar kembali ke orientasi dunia nyata
             return turf.transformRotate(turf.lineString(continuousCoords), angleDeg, {pivot: centroid});
         }
 
-        var results = [], mainLine = buildContinuousTrack(baseAngle, config.interval, config.curve); 
+        var results = [], isOto = config.mainOrient.startsWith('longest');
+        var mainLine = buildContinuousTrack(baseAngle, config.interval, config.curve, isOto, config.mainOrient); 
         if(mainLine) { mainLine.properties = { type: "Main Lines" }; results.push(mainLine); }
-        if (config.crossInterval > 0) { var crossAngle = baseAngle + 90; var crossLine = buildContinuousTrack(crossAngle, config.crossInterval, config.curve); if(crossLine) { crossLine.properties = { type: "Cross Lines" }; results.push(crossLine); } }
         return results;
     }
 
     function tangkapGambarBatimetri(polygonLayer) { var polyGeoJSON = polygonLayer.toGeoJSON(), resultFeatures = generateBatimetriFeatures(polyGeoJSON, batiConfig); if (resultFeatures.length === 0) { alert("Area terlalu kecil/Interval besar!"); map.removeLayer(polygonLayer); return; } lastBatiPolyGeoJSON = polyGeoJSON; lastBatiConfig = Object.assign({}, batiConfig); fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: batiConfig.nama, pengupload: currentUser.username, features: resultFeatures, geom_type: 'LineString' }) }).then(res => res.json()).then(d => { alert("Lajur Batimetri Dibuat!"); map.removeLayer(polygonLayer); refreshSemuaData(); }); }
-    function prosesEditBatimetri() { lastBatiConfig.interval = parseFloat(document.getElementById('editBatiInterval').value); lastBatiConfig.crossInterval = parseFloat(document.getElementById('editBatiCrossInterval').value); lastBatiConfig.curve = parseFloat(document.getElementById('editBatiCurve').value); var rf = generateBatimetriFeatures(lastBatiPolyGeoJSON, lastBatiConfig); if(!rf || rf.length === 0) return alert("Interval tidak valid."); fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: `DELETE FROM shp_garis WHERE nama_layer = '${lastBatiConfig.nama}'` }) }).then(() => fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: lastBatiConfig.nama, pengupload: currentUser.username, features: rf, geom_type: 'LineString' }) })).then(() => { alert("Diperbarui!"); document.getElementById('modalBatimetri').style.display='none'; refreshSemuaData(); }); }
+    function prosesEditBatimetri() { lastBatiConfig.interval = parseFloat(document.getElementById('editBatiInterval').value); lastBatiConfig.curve = parseFloat(document.getElementById('editBatiCurve').value); var rf = generateBatimetriFeatures(lastBatiPolyGeoJSON, lastBatiConfig); if(!rf || rf.length === 0) return alert("Interval tidak valid."); fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: `DELETE FROM shp_garis WHERE nama_layer = '${lastBatiConfig.nama}'` }) }).then(() => fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: lastBatiConfig.nama, pengupload: currentUser.username, features: rf, geom_type: 'LineString' }) })).then(() => { alert("Diperbarui!"); document.getElementById('modalBatimetri').style.display='none'; refreshSemuaData(); }); }
 
     map.on('pm:create', async function (e) {
         var layer = e.layer; 
