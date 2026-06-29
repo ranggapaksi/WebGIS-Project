@@ -164,7 +164,7 @@
     <button id="btnLokasi" class="btn-float"><span class="icon">📍</span><span class="label">Locate</span></button>
     <button id="btnLiveSync" class="btn-float"><span class="icon">🔄</span><span class="label" id="lblSync">Sync</span></button>
     <button class="btn-float" onclick="document.getElementById('modalShp').style.display='block'"><span class="icon">📁</span><span class="label">Import</span></button>
-    <button class="btn-float" onclick="bukaModalGNSS()"><span class="icon">🛰️</span><span class="label">GNSS</span></button>
+    <button class="btn-float" onclick="toggleGNSS()"><span class="icon">🛰️</span><span class="label">GNSS</span></button>
     <button class="btn-float" onclick="inisiasiModeDrone()"><span class="icon" style="color: var(--accent);">✈️</span><span class="label" style="color: var(--accent);">Drone</span></button>
     <button class="btn-float" onclick="bukaModalBatimetri()"><span class="icon" style="color: var(--success);">🌊</span><span class="label" style="color: var(--success);">Survey</span></button>
     <button class="btn-float" onclick="bukaModalExport()"><span class="icon">📤</span><span class="label">Export</span></button>
@@ -174,16 +174,23 @@
     <button id="btnHapusShp" class="btn-float"><span class="icon" style="color: var(--danger);">🗑️</span><span class="label" style="color: var(--danger);">Hapus</span></button>
 </div>
 
-<div id="modalGNSS" class="modal-overlay">
-    <div class="modal-box">
-        <div class="modal-box-header"><span>🛰️ GNSS EarthScope Downloader</span><span onclick="document.getElementById('modalGNSS').style.display='none'" style="cursor:pointer">&times;</span></div>
-        <div class="modal-box-body">
-            <div class="input-row"><label>Station ID (Bako/Ntus/dll)</label><input type="text" id="gnssStation" value="BAKO" class="modal-input"></div>
-            <div class="input-row"><label>Tahun Mulai (YYYY)</label><input type="number" id="gnssStart" value="2015" class="modal-input"></div>
-            <div class="input-row"><label>Tahun Selesai (YYYY)</label><input type="number" id="gnssEnd" value="2025" class="modal-input"></div>
-            <p style="font-size:10px; color:var(--text-muted); margin-bottom:15px;">*Data akan diekstrak menggunakan script Python Automation ke database.</p>
-            <button class="modal-btn" style="background: var(--accent); color: white;" onclick="alert('Permintaan Download GNSS API EarthScope untuk Station '+document.getElementById('gnssStation').value+' ('+document.getElementById('gnssStart').value+'-'+document.getElementById('gnssEnd').value+') telah dikirim ke backend Python.')">START DOWNLOAD</button>
-        </div>
+<div id="gnss-panel" class="side-panel" style="width: 250px; bottom: 80px; right: 10px; padding: 15px; border-radius: 8px;">
+    <h4 style="margin: 0 0 10px 0; font-weight: 700; color: var(--accent); display: flex; justify-content: space-between;">
+        <span>🛰️ STATUS GNSS RTK</span>
+        <span onclick="toggleGNSS()" style="cursor:pointer; color:var(--danger); font-size:14px;">&times;</span>
+    </h4>
+    <div style="font-size: 11px; margin-bottom: 8px; font-family: monospace;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px; border-bottom:1px solid #eee; padding-bottom:4px;"><span>Status:</span><b id="gnss-status" style="color:var(--danger)">Disconnected</b></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>Lat:</span><b id="gnss-lat">-</b></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>Lng:</span><b id="gnss-lng">-</b></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>Alt (m):</span><b id="gnss-alt">-</b></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>Akurasi:</span><b id="gnss-acc">-</b></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>Heading:</span><b id="gnss-head">-</b></div>
+    </div>
+    <p style="font-size:8px; color:var(--text-muted); margin-bottom:12px; line-height:1.4;">*Untuk akurasi RTK (Centimeter Level), hubungkan device ini ke Receiver GNSS (Trimble/Emlid/South) dan gunakan aplikasi Mock Location (NTRIP Client) sebelum merekam data.</p>
+    <div style="display: flex; gap: 5px;">
+        <button class="modal-btn" style="padding:8px; margin:0;" onclick="toggleGNSS()">TUTUP</button>
+        <button class="modal-btn" style="padding:8px; margin:0; background:var(--success); color:#fff; font-weight:bold;" onclick="rekamTitikGNSS()">📍 REKAM TITIK</button>
     </div>
 </div>
 
@@ -226,7 +233,7 @@
                 <input type="range" id="droneAngle" class="slider" min="0" max="360" value="0" style="width: 100%; margin-top: 5px; height: 4px;" oninput="updateDronePreview()">
             </div>
 
-            <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Geser/edit titik poligon di peta untuk mengubah rute secara Live!</p>
+            <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Anda bisa menggeser/mengedit titik poligon di peta untuk mengubah rute ini secara Live!</p>
 
             <div class="drone-stats" id="droneStats">
                 <div><span>Area:</span><b id="s_area">-</b></div>
@@ -235,7 +242,7 @@
                 <div><span>Distance:</span><b id="s_dist">-</b></div>
                 <div><span>No of Strips:</span><b id="s_strip">-</b></div>
                 <div><span>Photo every:</span><b id="s_photo_every">-</b></div>
-                <div><span>Dist between img:</span><b id="s_dist_img">-</b></div>
+                <div><span>Dist between images:</span><b id="s_dist_img">-</b></div>
                 <div><span>Footprint:</span><b id="s_footprint">-</b></div>
                 <div><span>Ground Resolution:</span><b id="s_gsd">-</b></div>
                 <div><span>Dist between lines:</span><b id="s_dist_line">-</b></div>
@@ -282,7 +289,7 @@
                     <p style="font-size:9px; color:var(--text-muted); margin-top:0px; margin-bottom:0;">*Isi 0 jika hanya ingin 1 arah.</p>
                 </div>
 
-                <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Geser titik poligon di peta untuk merubah jalur secara Live!</p>
+                <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Anda bisa menggeser/mengedit titik poligon di peta untuk merubah jalur secara Live!</p>
                 
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
                     <button class="modal-btn" style="border-color: var(--danger); color: var(--danger);" onclick="batalMisiBatimetri()">BATAL</button>
@@ -412,7 +419,42 @@
     let searchTimeout;
     function getSearchRecommendations() { clearTimeout(searchTimeout); const query = document.getElementById('inputCariWilayah').value; const suggList = document.getElementById('search-suggestions'); if(query.length < 3) { suggList.style.display = 'none'; return; } searchTimeout = setTimeout(() => { fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`).then(res => res.json()).then(data => { suggList.innerHTML = ''; if(data.length > 0) { data.forEach(item => { let li = document.createElement('li'); li.innerText = item.display_name; li.onclick = () => { map.flyToBounds([[item.boundingbox[0], item.boundingbox[2]], [item.boundingbox[1], item.boundingbox[3]]]); suggList.style.display = 'none'; document.getElementById('inputCariWilayah').value = item.display_name; }; suggList.appendChild(li); }); suggList.style.display = 'block'; } else { suggList.style.display = 'none'; } }); }, 500); }
     function cariWilayah() { const query = document.getElementById('inputCariWilayah').value; if (!query) return; const btn = document.getElementById('btnCariWilayah'); btn.innerHTML = '⏳'; fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`).then(res => res.json()).then(data => { btn.innerHTML = '🔍'; if (data && data.length > 0) { const bbox = data[0].boundingbox; if (bbox) map.flyToBounds([ [bbox[0], bbox[2]], [bbox[1], bbox[3]] ]); else map.flyTo([data[0].lat, data[0].lon], 13); document.getElementById('search-suggestions').style.display = 'none'; } else { alert('Wilayah tidak ditemukan!'); } }).catch(() => { btn.innerHTML = '🔍'; alert('Gagal mencari wilayah!'); }); }
-    function bukaModalGNSS() { document.getElementById('modalGNSS').style.display='block'; }
+
+    // --- FITUR GNSS LIVE RTK TRACKING ---
+    let gnssWatchId = null; let currentGnssPos = null; let gnssMarker = null;
+    function toggleGNSS() { const panel = document.getElementById('gnss-panel'); if (panel.style.display === 'none' || panel.style.display === '') { panel.style.display = 'block'; startGNSS(); } else { panel.style.display = 'none'; stopGNSS(); } }
+    
+    function startGNSS() {
+        if (!navigator.geolocation) return alert("Browser tidak mendukung Geolocation API.");
+        document.getElementById('gnss-status').innerText = "Connecting..."; document.getElementById('gnss-status').style.color = "var(--warning)";
+        gnssWatchId = navigator.geolocation.watchPosition(
+            (pos) => {
+                currentGnssPos = pos;
+                const lat = pos.coords.latitude, lng = pos.coords.longitude, acc = pos.coords.accuracy, alt = pos.coords.altitude || 0, hdg = pos.coords.heading || 0;
+                document.getElementById('gnss-status').innerText = acc <= 0.1 ? "RTK FIX" : (acc <= 1 ? "RTK FLOAT" : "SINGLE/AUTONOMOUS");
+                document.getElementById('gnss-status').style.color = acc <= 0.1 ? "var(--success)" : (acc <= 1 ? "var(--warning)" : "var(--danger)");
+                document.getElementById('gnss-lat').innerText = lat.toFixed(8); document.getElementById('gnss-lng').innerText = lng.toFixed(8);
+                document.getElementById('gnss-acc').innerText = acc.toFixed(3) + " m"; document.getElementById('gnss-alt').innerText = alt ? alt.toFixed(3) : '-'; document.getElementById('gnss-head').innerText = hdg ? hdg.toFixed(1) + '°' : '-';
+                let latlng = [lat, lng];
+                if(!gnssMarker) { gnssMarker = L.circleMarker(latlng, {radius: 6, color: '#fff', fillColor: '#2563eb', fillOpacity: 1, weight: 2}).addTo(map); map.setView(latlng, 19); } 
+                else { gnssMarker.setLatLng(latlng); }
+            },
+            (err) => { document.getElementById('gnss-status').innerText = "Error: " + err.message; document.getElementById('gnss-status').style.color = "var(--danger)"; },
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+        );
+    }
+    
+    function stopGNSS() { if (gnssWatchId) navigator.geolocation.clearWatch(gnssWatchId); if (gnssMarker) { map.removeLayer(gnssMarker); gnssMarker = null; } document.getElementById('gnss-status').innerText = "Disconnected"; document.getElementById('gnss-status').style.color = "var(--danger)"; currentGnssPos = null; }
+    
+    function rekamTitikGNSS() {
+        if(!currentGnssPos) return alert("Belum ada data GNSS yang valid!");
+        let lat = currentGnssPos.coords.latitude, lng = currentGnssPos.coords.longitude, acc = currentGnssPos.coords.accuracy;
+        let tabel = document.getElementById('targetTabel').value; if(tabel !== 'shp_titik') { if(!confirm("Target tabel bukan SHP Titik. Tetap lanjutkan menyimpan ke tabel " + tabel + "?")) return; }
+        let attr = { id: prompt("ID Titik:", Math.floor(Math.random() * 900 + 100).toString()) }; if(!attr.id) return;
+        attr.nama_layer = prompt("Nama Layer / Titik:", "GNSS_" + attr.id); if(!attr.nama_layer) return;
+        fetch('/api/save-feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tabel: 'shp_titik', geometry: { type: "Point", coordinates: [lng, lat] }, attr: attr, uploader: currentUser ? currentUser.username : 'Admin' }) })
+        .then(res => res.json()).then(d => { if(d.status === 'Success') { alert("Titik GNSS Tersimpan! (Akurasi: " + acc.toFixed(3) + "m)"); refreshSemuaData(); } else { alert("Gagal: " + d.error); } });
+    }
 
     function switchLogin(type) { currentLoginType = type; document.getElementById('tabUser').classList.remove('active'); document.getElementById('tabAdmin').classList.remove('active'); document.getElementById('logError').style.display = 'none'; if (type === 'admin') { document.getElementById('tabAdmin').classList.add('active'); document.getElementById('loginHint').style.display = 'none'; } else { document.getElementById('tabUser').classList.add('active'); document.getElementById('loginHint').style.display = 'block'; } }
     function prosesLogin() { const user = document.getElementById('logUsername').value; const pass = document.getElementById('logPassword').value; const btn = document.querySelector('.login-btn'); const err = document.getElementById('logError'); if(!user || !pass) return; btn.innerHTML = "Processing..."; fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, password: pass, type: currentLoginType }) }).then(res => res.json()).then(data => { if(data.status === 'Success') { currentUser = data.data; document.getElementById('login-overlay').style.display = 'none'; const badge = document.getElementById('userRoleBadge'); badge.style.display = 'inline-block'; badge.innerHTML = `[ ${currentUser.username.toUpperCase()} | ${currentUser.role.toUpperCase()} ]`; aturHakAkses(); refreshSemuaData(); mulaiHeartbeat(); } else { err.style.display = 'block'; err.innerText = data.error; btn.innerHTML = "MASUK"; } }).catch(() => { err.style.display = 'block'; err.innerText = "Koneksi server gagal!"; btn.innerHTML = "MASUK"; }); }
@@ -458,7 +500,6 @@
                         for(let k in row) { if(k !== 'geometry' && k !== 'geom') { if(k === 'properties' && row[k]) { let propsObj = typeof row[k] === 'string' ? JSON.parse(row[k]) : row[k]; for(let pk in propsObj) p += `<tr><td>${pk}</td><td>: ${propsObj[pk]}</td></tr>`; } else { p += `<tr><td>${k}</td><td>: ${row[k] !== null ? row[k] : '-'}</td></tr>`; } } } 
                         p += `</table>`; 
                         
-                        // MENAMBAHKAN pmIgnore PADA DATA GARIS AGAR GEOMAN EDIT TIDAK FREEZE/CRASH
                         let leafletLayer = L.geoJSON(JSON.parse(row.geometry), { 
                             pmIgnore: row.geometry.includes("LineString") ? true : false,
                             style: function() { return { color: itemColor, fillColor: itemColor, weight: row.geometry.includes("Polygon") ? 1 : 2, fillOpacity: 0.5 }; }, 
@@ -486,7 +527,7 @@
 
     function zoomKeLayer(n) { var b = L.latLngBounds(); layersData[n].eachLayer(l => { if (l.getBounds) b.extend(l.getBounds()); else if (l.getLatLng) b.extend(l.getLatLng()); }); if (b.isValid()) map.flyToBounds(b, { padding: [40, 40] }); }
 
-    // --- ALGORITMA DRONE PLANNER BARU (KALKULASI GSD & FOTOGRAMETRI LENGKAP) ---
+    // --- ALGORITMA DRONE PLANNER ---
     var isDrawingDroneMode = false, currentDronePolygon = null, tempDroneLayer = L.featureGroup().addTo(map);
     var droneCameras = { 'phantom4rtk': { focal: 8.8, sw: 13.2, sh: 8.8, iw: 5472, ih: 3648 }, 'mavic3e': { focal: 12, sw: 17.3, sh: 13.0, iw: 5280, ih: 3956 } };
 
@@ -504,27 +545,18 @@
         var angle = parseFloat(document.getElementById('droneAngle').value) || 0;
         document.getElementById('lblAngle').innerText = angle;
 
-        // PENCEGAH INFINITE LOOP (Maksimal Overlap 95%)
-        if(overlap >= 95) overlap = 95;
-        if(sidelap >= 95) sidelap = 95;
-
-        // Fotogrametri Math
-        var gsd = (alt * 100 * cam.sw) / (cam.focal * cam.iw); // cm/px
-        var footW = (alt * cam.sw) / cam.focal; // meter (Berdasarkan lebar sensor)
-        var footH = (alt * cam.sh) / cam.focal; // meter
-        var spacing = footW * (1 - (sidelap/100)); 
-        var triggerDist = footH * (1 - (overlap/100)); 
-
-        if(spacing < 0.1) spacing = 0.1;
-        if(triggerDist < 0.1) triggerDist = 0.1;
+        if(overlap >= 95) overlap = 95; if(sidelap >= 95) sidelap = 95;
+        var gsd = (alt * 100 * cam.sw) / (cam.focal * cam.iw);
+        var footW = (alt * cam.sw) / cam.focal, footH = (alt * cam.sh) / cam.focal;
+        var spacing = footW * (1 - (sidelap/100)), triggerDist = footH * (1 - (overlap/100)); 
+        if(spacing < 0.1) spacing = 0.1; if(triggerDist < 0.1) triggerDist = 0.1;
         
         var polyData = currentDronePolygon.toGeoJSON();
         var centroid = turf.centroid(polyData), rotatedPoly = turf.transformRotate(polyData, -angle, {pivot: centroid}); 
         var bbox = turf.bbox(rotatedPoly), minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3]; 
         var lines = [], refPt = turf.point([minX, minY]), distY = turf.distance([minX, minY], [minX, maxY], {units: 'meters'}); 
         var numLines = Math.floor(distY / spacing) + 1; 
-        
-        if (numLines > 5000) numLines = 5000; // Pencegah Browser Crash
+        if (numLines > 5000) numLines = 5000; 
 
         for(let i=0; i<=numLines; i++) { 
             var stepPt = turf.destination(refPt, i * spacing, 0, {units: 'meters'}), currentY = stepPt.geometry.coordinates[1]; 
@@ -556,32 +588,17 @@
 
         if(continuousCoords.length > 1) { 
             var flightPath = turf.lineString(continuousCoords);
-            var distanceMeters = turf.length(flightPath, {units: 'meters'});
-            var timeSec = distanceMeters / speed;
-            var numPics = Math.ceil(distanceMeters / triggerDist);
-            var areaM2 = turf.area(polyData);
+            var distanceMeters = turf.length(flightPath, {units: 'meters'}), timeSec = distanceMeters / speed, numPics = Math.ceil(distanceMeters / triggerDist), areaM2 = turf.area(polyData);
             
-            // Tambahkan pmIgnore agar Geoman tidak freeze saat mengedit
             L.geoJSON(flightPath, { style: { color: '#10b981', weight: 2 }, pmIgnore: true }).addTo(tempDroneLayer); 
             L.circleMarker([continuousCoords[0][1], continuousCoords[0][0]], {radius: 6, color: '#fff', fillColor: '#10b981', fillOpacity: 1, weight: 2, pmIgnore: true}).bindTooltip("START", {permanent:true, direction:'right'}).addTo(tempDroneLayer); 
             L.circleMarker([continuousCoords[continuousCoords.length-1][1], continuousCoords[continuousCoords.length-1][0]], {radius: 6, color: '#fff', fillColor: '#ef4444', fillOpacity: 1, weight: 2, pmIgnore: true}).bindTooltip("END", {permanent:true, direction:'right'}).addTo(tempDroneLayer); 
             
-            document.getElementById('s_area').innerText = Math.round(areaM2) + " m²";
-            document.getElementById('s_pic').innerText = numPics + " Foto";
-            document.getElementById('s_time').innerText = Math.floor(timeSec/60) + ":" + Math.round(timeSec%60).toString().padStart(2, '0') + " Menit";
-            document.getElementById('s_dist').innerText = (distanceMeters/1000).toFixed(2) + " km";
-            document.getElementById('s_strip').innerText = Math.round(numLines);
-            document.getElementById('s_photo_every').innerText = (triggerDist / speed).toFixed(1) + " Detik";
-            document.getElementById('s_dist_img').innerText = triggerDist.toFixed(1) + " m";
-            document.getElementById('s_footprint').innerText = footW.toFixed(1) + " x " + footH.toFixed(1) + " m";
-            document.getElementById('s_gsd').innerText = gsd.toFixed(2) + " cm/px";
-            document.getElementById('s_dist_line').innerText = spacing.toFixed(1) + " m";
+            document.getElementById('s_area').innerText = Math.round(areaM2) + " m²"; document.getElementById('s_pic').innerText = numPics + " Foto"; document.getElementById('s_time').innerText = Math.floor(timeSec/60) + ":" + Math.round(timeSec%60).toString().padStart(2, '0') + " Menit"; document.getElementById('s_dist').innerText = (distanceMeters/1000).toFixed(2) + " km"; document.getElementById('s_strip').innerText = Math.round(numLines); document.getElementById('s_photo_every').innerText = (triggerDist / speed).toFixed(1) + " Detik"; document.getElementById('s_dist_img').innerText = triggerDist.toFixed(1) + " m"; document.getElementById('s_footprint').innerText = footW.toFixed(1) + " x " + footH.toFixed(1) + " m"; document.getElementById('s_gsd').innerText = gsd.toFixed(2) + " cm/px"; document.getElementById('s_dist_line').innerText = spacing.toFixed(1) + " m";
             
             flightPath.properties = { nama_layer: document.getElementById('droneNama').value, gsd: gsd.toFixed(2), overlap: overlap, sidelap: sidelap, altitude_m: alt, speed_ms: speed, total_jarak_km: (distanceMeters/1000).toFixed(2), foto: numPics };
             tempDroneLayer.currentPath = flightPath;
-        } else { 
-            document.getElementById('droneStats').innerHTML = `<span style="color:var(--danger)">Area poligon terlalu sempit.</span>`; 
-        } 
+        } else { document.getElementById('droneStats').innerHTML = `<span style="color:var(--danger)">Area poligon terlalu sempit.</span>`; } 
     }
     
     function simpanMisiDrone() { 
@@ -590,7 +607,7 @@
     }
     function batalMisiDrone() { document.getElementById('modalDronePlanner').style.display = 'none'; if(currentDronePolygon) map.removeLayer(currentDronePolygon); tempDroneLayer.clearLayers(); currentDronePolygon = null; }
 
-    // --- ALGORITMA BATIMETRI FINAL ---
+    // --- ALGORITMA BATIMETRI ---
     var isDrawingBatimetri = false, currentBatiPolygon = null, tempBatiLayer = L.featureGroup().addTo(map);
     function bukaModalBatimetri() { document.getElementById('modalBatimetri').style.display = 'block'; updateBatiPreview(); }
     function mulaiGambarBatimetri() { document.getElementById('modalBatimetri').style.display = 'none'; isDrawingBatimetri = true; map.pm.enableDraw('Polygon', { snappable: false }); }
@@ -598,17 +615,9 @@
     
     function updateBatiPreview() {
         tempBatiLayer.clearLayers(); if(!currentBatiPolygon) return;
-        var interval = parseFloat(document.getElementById('batiInterval').value) || 50;
-        var crossInterval = parseFloat(document.getElementById('batiCrossInterval').value) || 0;
-        var curvePercent = parseFloat(document.getElementById('batiCurve').value) || 100;
-        var mainOrient = document.getElementById('batiMainOrient').value;
-        
-        // Pencegah Infinite Loop saat edit interval
+        var interval = parseFloat(document.getElementById('batiInterval').value) || 50, crossInterval = parseFloat(document.getElementById('batiCrossInterval').value) || 0, curvePercent = parseFloat(document.getElementById('batiCurve').value) || 100, mainOrient = document.getElementById('batiMainOrient').value;
         if (interval < 0.1) interval = 0.1;
-        
-        var polyData = currentBatiPolygon.toGeoJSON();
-        var centroid = turf.centroid(polyData);
-        
+        var polyData = currentBatiPolygon.toGeoJSON(); var centroid = turf.centroid(polyData);
         function getLongestEdgeAngle(poly) { var coords = turf.getCoords(poly)[0]; var maxD = 0, angle = 0; for(var i=0; i<coords.length-1; i++) { var p1 = turf.point(coords[i]), p2 = turf.point(coords[i+1]), d = turf.distance(p1, p2); if(d > maxD) { maxD = d; angle = turf.bearing(p1, p2); } } return angle; }
         
         var baseAngle = 0; var isOto = mainOrient.startsWith('longest');
@@ -622,8 +631,7 @@
             var ptMin = turf.point([minX, minY]), ptMaxY = turf.point([minX, maxY]);
             var totalHeight = turf.distance(ptMin, ptMaxY, {units: 'meters'}), numLinesReal = Math.floor(totalHeight / intv);
             var row_segments = []; var overshoot = 5; 
-            
-            if(numLinesReal > 5000) numLinesReal = 5000; // Pencegah Browser Crash
+            if(numLinesReal > 5000) numLinesReal = 5000; 
 
             var reverseOrder = false;
             if (!isOto) { if (isMainTrack) { if (mainOrient.includes('top-down') || mainOrient.includes('right-left')) reverseOrder = true; } else { if (mainOrient.includes('top-down') || mainOrient.includes('right-left')) reverseOrder = true; } }
@@ -679,12 +687,12 @@
         var layer = e.layer; 
         if(isDrawingDroneMode && e.shape === 'Polygon') { 
             isDrawingDroneMode = false; currentDronePolygon = layer; 
-            layer.on('pm:markerdrag', dbDrn); layer.on('pm:change', updateDronePreview); // Real-time render anti-freeze
+            layer.on('pm:markerdrag', dbDrn); layer.on('pm:change', updateDronePreview);
             document.getElementById('modalDronePlanner').style.display = 'block'; updateDronePreview(); return; 
         }
         if(isDrawingBatimetri && e.shape === 'Polygon') { 
             isDrawingBatimetri = false; currentBatiPolygon = layer; 
-            layer.on('pm:markerdrag', dbBat); layer.on('pm:change', updateBatiPreview); // Real-time render anti-freeze
+            layer.on('pm:markerdrag', dbBat); layer.on('pm:change', updateBatiPreview); 
             document.getElementById('modalBatimetri').style.display = 'block'; updateBatiPreview(); return; 
         }
         var geojson = layer.toGeoJSON(); var tabel = document.getElementById('targetTabel').value; var attr = {}; attr.id = prompt("ID (Angka):", Math.floor(Math.random() * 90 + 10).toString()); if(!attr.id) { map.removeLayer(layer); return; }
