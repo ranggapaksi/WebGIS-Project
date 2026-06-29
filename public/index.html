@@ -58,7 +58,6 @@
         .btn-float .icon { font-size: 14px; }
         .btn-float .label { font-size: 7px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
 
-        /* PERUBAHAN TOC: DIPANGKAS 2CM (DARI 340PX KE 260PX) */
         #toc-sidebar { position: absolute; top: 120px; left: 15px; width: 260px; max-height: calc(100vh - 190px); background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); z-index: 1000; overflow-y: auto; display: block; }
         .toc-header { padding: 12px 15px; background: var(--bg-panel); font-weight: 700; border-bottom: 1px solid var(--border-color); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; position: sticky; top: 0; z-index: 2; }
         .toc-card { margin: 10px; background: var(--bg-base); border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; }
@@ -227,7 +226,7 @@
                 <input type="range" id="droneAngle" class="slider" min="0" max="360" value="0" style="width: 100%; margin-top: 5px; height: 4px;" oninput="updateDronePreview()">
             </div>
 
-            <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Anda bisa menggeser/mengedit titik poligon di peta untuk mengubah rute ini secara Live!</p>
+            <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Geser/edit titik poligon di peta untuk mengubah rute secara Live!</p>
 
             <div class="drone-stats" id="droneStats">
                 <div><span>Area:</span><b id="s_area">-</b></div>
@@ -236,7 +235,7 @@
                 <div><span>Distance:</span><b id="s_dist">-</b></div>
                 <div><span>No of Strips:</span><b id="s_strip">-</b></div>
                 <div><span>Photo every:</span><b id="s_photo_every">-</b></div>
-                <div><span>Dist between images:</span><b id="s_dist_img">-</b></div>
+                <div><span>Dist between img:</span><b id="s_dist_img">-</b></div>
                 <div><span>Footprint:</span><b id="s_footprint">-</b></div>
                 <div><span>Ground Resolution:</span><b id="s_gsd">-</b></div>
                 <div><span>Dist between lines:</span><b id="s_dist_line">-</b></div>
@@ -283,7 +282,7 @@
                     <p style="font-size:9px; color:var(--text-muted); margin-top:0px; margin-bottom:0;">*Isi 0 jika hanya ingin 1 arah.</p>
                 </div>
 
-                <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Anda bisa menggeser/mengedit titik poligon di peta untuk merubah jalur secara Live!</p>
+                <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Geser titik poligon di peta untuk merubah jalur secara Live!</p>
                 
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
                     <button class="modal-btn" style="border-color: var(--danger); color: var(--danger);" onclick="batalMisiBatimetri()">BATAL</button>
@@ -410,29 +409,11 @@
     function toggleTOCList(listId, el) { var list = document.getElementById(listId); if(list.style.display === 'block') { list.style.display = 'none'; el.innerHTML = el.innerHTML.replace('▼', '▶').replace('(Tutup)', '(Buka)'); } else { list.style.display = 'block'; el.innerHTML = el.innerHTML.replace('▶', '▼').replace('(Buka)', '(Tutup)'); } }
     function toggleTabelVis(nama, btn) { var lyr = layersData[nama]; if (map.hasLayer(lyr)) { map.removeLayer(lyr); btn.innerHTML = "Show"; } else { map.addLayer(lyr); btn.innerHTML = "Hide"; } }
 
-    // --- SEARCH AUTOCOMPLETE ---
     let searchTimeout;
-    function getSearchRecommendations() {
-        clearTimeout(searchTimeout); const query = document.getElementById('inputCariWilayah').value; const suggList = document.getElementById('search-suggestions');
-        if(query.length < 3) { suggList.style.display = 'none'; return; }
-        searchTimeout = setTimeout(() => {
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`).then(res => res.json()).then(data => {
-                suggList.innerHTML = '';
-                if(data.length > 0) {
-                    data.forEach(item => {
-                        let li = document.createElement('li'); li.innerText = item.display_name;
-                        li.onclick = () => { map.flyToBounds([[item.boundingbox[0], item.boundingbox[2]], [item.boundingbox[1], item.boundingbox[3]]]); suggList.style.display = 'none'; document.getElementById('inputCariWilayah').value = item.display_name; };
-                        suggList.appendChild(li);
-                    });
-                    suggList.style.display = 'block';
-                } else { suggList.style.display = 'none'; }
-            });
-        }, 500);
-    }
+    function getSearchRecommendations() { clearTimeout(searchTimeout); const query = document.getElementById('inputCariWilayah').value; const suggList = document.getElementById('search-suggestions'); if(query.length < 3) { suggList.style.display = 'none'; return; } searchTimeout = setTimeout(() => { fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`).then(res => res.json()).then(data => { suggList.innerHTML = ''; if(data.length > 0) { data.forEach(item => { let li = document.createElement('li'); li.innerText = item.display_name; li.onclick = () => { map.flyToBounds([[item.boundingbox[0], item.boundingbox[2]], [item.boundingbox[1], item.boundingbox[3]]]); suggList.style.display = 'none'; document.getElementById('inputCariWilayah').value = item.display_name; }; suggList.appendChild(li); }); suggList.style.display = 'block'; } else { suggList.style.display = 'none'; } }); }, 500); }
     function cariWilayah() { const query = document.getElementById('inputCariWilayah').value; if (!query) return; const btn = document.getElementById('btnCariWilayah'); btn.innerHTML = '⏳'; fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`).then(res => res.json()).then(data => { btn.innerHTML = '🔍'; if (data && data.length > 0) { const bbox = data[0].boundingbox; if (bbox) map.flyToBounds([ [bbox[0], bbox[2]], [bbox[1], bbox[3]] ]); else map.flyTo([data[0].lat, data[0].lon], 13); document.getElementById('search-suggestions').style.display = 'none'; } else { alert('Wilayah tidak ditemukan!'); } }).catch(() => { btn.innerHTML = '🔍'; alert('Gagal mencari wilayah!'); }); }
-
     function bukaModalGNSS() { document.getElementById('modalGNSS').style.display='block'; }
-    
+
     function switchLogin(type) { currentLoginType = type; document.getElementById('tabUser').classList.remove('active'); document.getElementById('tabAdmin').classList.remove('active'); document.getElementById('logError').style.display = 'none'; if (type === 'admin') { document.getElementById('tabAdmin').classList.add('active'); document.getElementById('loginHint').style.display = 'none'; } else { document.getElementById('tabUser').classList.add('active'); document.getElementById('loginHint').style.display = 'block'; } }
     function prosesLogin() { const user = document.getElementById('logUsername').value; const pass = document.getElementById('logPassword').value; const btn = document.querySelector('.login-btn'); const err = document.getElementById('logError'); if(!user || !pass) return; btn.innerHTML = "Processing..."; fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, password: pass, type: currentLoginType }) }).then(res => res.json()).then(data => { if(data.status === 'Success') { currentUser = data.data; document.getElementById('login-overlay').style.display = 'none'; const badge = document.getElementById('userRoleBadge'); badge.style.display = 'inline-block'; badge.innerHTML = `[ ${currentUser.username.toUpperCase()} | ${currentUser.role.toUpperCase()} ]`; aturHakAkses(); refreshSemuaData(); mulaiHeartbeat(); } else { err.style.display = 'block'; err.innerText = data.error; btn.innerHTML = "MASUK"; } }).catch(() => { err.style.display = 'block'; err.innerText = "Koneksi server gagal!"; btn.innerHTML = "MASUK"; }); }
     function aturHakAkses() { const adminElements = document.querySelectorAll('.admin-only'); if (currentUser.role !== 'admin') adminElements.forEach(el => el.style.display = 'none'); else adminElements.forEach(el => el.style.display = 'flex'); }
@@ -476,7 +457,14 @@
                         let p = `<div style="text-transform:uppercase; font-weight:bold; margin-bottom:5px; border-bottom:1px solid var(--border-color); padding-bottom:5px; color:var(--text-main);">${tabel}</div><table class="popup-table">`; 
                         for(let k in row) { if(k !== 'geometry' && k !== 'geom') { if(k === 'properties' && row[k]) { let propsObj = typeof row[k] === 'string' ? JSON.parse(row[k]) : row[k]; for(let pk in propsObj) p += `<tr><td>${pk}</td><td>: ${propsObj[pk]}</td></tr>`; } else { p += `<tr><td>${k}</td><td>: ${row[k] !== null ? row[k] : '-'}</td></tr>`; } } } 
                         p += `</table>`; 
-                        let leafletLayer = L.geoJSON(JSON.parse(row.geometry), { style: function() { return { color: itemColor, fillColor: itemColor, weight: row.geometry.includes("Polygon") ? 1 : 2, fillOpacity: 0.5 }; }, pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 5, fillColor: itemColor, color: "#fff", weight: 1, fillOpacity: 0.8 }) });
+                        
+                        // MENAMBAHKAN pmIgnore PADA DATA GARIS AGAR GEOMAN EDIT TIDAK FREEZE/CRASH
+                        let leafletLayer = L.geoJSON(JSON.parse(row.geometry), { 
+                            pmIgnore: row.geometry.includes("LineString") ? true : false,
+                            style: function() { return { color: itemColor, fillColor: itemColor, weight: row.geometry.includes("Polygon") ? 1 : 2, fillOpacity: 0.5 }; }, 
+                            pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 5, fillColor: itemColor, color: "#fff", weight: 1, fillOpacity: 0.8, pmIgnore: true }) 
+                        });
+                        
                         let pkField = tabel.startsWith('shp_') ? 'id' : 'id_' + tabel; let featureId = row[pkField];
                         let baseName = row.nama_layer || row.nama_jalan || row.penggunaan || row.nama_kabupaten || row.id_provider || 'Data Umum';
                         leafletLayer.featureId = featureId; leafletLayer.groupName = baseName; leafletLayer.bindPopup(p).addTo(layerGroup); 
@@ -500,10 +488,7 @@
 
     // --- ALGORITMA DRONE PLANNER BARU (KALKULASI GSD & FOTOGRAMETRI LENGKAP) ---
     var isDrawingDroneMode = false, currentDronePolygon = null, tempDroneLayer = L.featureGroup().addTo(map);
-    var droneCameras = {
-        'phantom4rtk': { focal: 8.8, sw: 13.2, sh: 8.8, iw: 5472, ih: 3648 },
-        'mavic3e': { focal: 12, sw: 17.3, sh: 13.0, iw: 5280, ih: 3956 }
-    };
+    var droneCameras = { 'phantom4rtk': { focal: 8.8, sw: 13.2, sh: 8.8, iw: 5472, ih: 3648 }, 'mavic3e': { focal: 12, sw: 17.3, sh: 13.0, iw: 5280, ih: 3956 } };
 
     function inisiasiModeDrone() { alert("Silakan gambar area poligon di peta untuk batas terbang Drone."); isDrawingDroneMode = true; map.pm.enableDraw('Polygon', { snappable: false, hintlineStyle: { color: '#f59e0b', dashArray: '5,5' }, pathOptions: { color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.2 } }); }
     
@@ -519,6 +504,10 @@
         var angle = parseFloat(document.getElementById('droneAngle').value) || 0;
         document.getElementById('lblAngle').innerText = angle;
 
+        // PENCEGAH INFINITE LOOP (Maksimal Overlap 95%)
+        if(overlap >= 95) overlap = 95;
+        if(sidelap >= 95) sidelap = 95;
+
         // Fotogrametri Math
         var gsd = (alt * 100 * cam.sw) / (cam.focal * cam.iw); // cm/px
         var footW = (alt * cam.sw) / cam.focal; // meter (Berdasarkan lebar sensor)
@@ -526,14 +515,17 @@
         var spacing = footW * (1 - (sidelap/100)); 
         var triggerDist = footH * (1 - (overlap/100)); 
 
-        var config = { spacing: spacing, angle: angle, margin: margin };
+        if(spacing < 0.1) spacing = 0.1;
+        if(triggerDist < 0.1) triggerDist = 0.1;
         
-        // Membangun Rute (seperti batimetri tapi dengan parameter drone)
         var polyData = currentDronePolygon.toGeoJSON();
         var centroid = turf.centroid(polyData), rotatedPoly = turf.transformRotate(polyData, -angle, {pivot: centroid}); 
         var bbox = turf.bbox(rotatedPoly), minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3]; 
         var lines = [], refPt = turf.point([minX, minY]), distY = turf.distance([minX, minY], [minX, maxY], {units: 'meters'}); 
         var numLines = Math.floor(distY / spacing) + 1; 
+        
+        if (numLines > 5000) numLines = 5000; // Pencegah Browser Crash
+
         for(let i=0; i<=numLines; i++) { 
             var stepPt = turf.destination(refPt, i * spacing, 0, {units: 'meters'}), currentY = stepPt.geometry.coordinates[1]; 
             var pt1 = turf.destination(turf.point([minX, currentY]), margin + 100, -90, {units: 'meters'}); 
@@ -569,9 +561,10 @@
             var numPics = Math.ceil(distanceMeters / triggerDist);
             var areaM2 = turf.area(polyData);
             
-            L.geoJSON(flightPath, { style: { color: '#10b981', weight: 2 } }).addTo(tempDroneLayer); 
-            L.circleMarker([continuousCoords[0][1], continuousCoords[0][0]], {radius: 6, color: '#fff', fillColor: '#10b981', fillOpacity: 1, weight: 2}).bindTooltip("START", {permanent:true, direction:'right'}).addTo(tempDroneLayer); 
-            L.circleMarker([continuousCoords[continuousCoords.length-1][1], continuousCoords[continuousCoords.length-1][0]], {radius: 6, color: '#fff', fillColor: '#ef4444', fillOpacity: 1, weight: 2}).bindTooltip("END", {permanent:true, direction:'right'}).addTo(tempDroneLayer); 
+            // Tambahkan pmIgnore agar Geoman tidak freeze saat mengedit
+            L.geoJSON(flightPath, { style: { color: '#10b981', weight: 2 }, pmIgnore: true }).addTo(tempDroneLayer); 
+            L.circleMarker([continuousCoords[0][1], continuousCoords[0][0]], {radius: 6, color: '#fff', fillColor: '#10b981', fillOpacity: 1, weight: 2, pmIgnore: true}).bindTooltip("START", {permanent:true, direction:'right'}).addTo(tempDroneLayer); 
+            L.circleMarker([continuousCoords[continuousCoords.length-1][1], continuousCoords[continuousCoords.length-1][0]], {radius: 6, color: '#fff', fillColor: '#ef4444', fillOpacity: 1, weight: 2, pmIgnore: true}).bindTooltip("END", {permanent:true, direction:'right'}).addTo(tempDroneLayer); 
             
             document.getElementById('s_area').innerText = Math.round(areaM2) + " m²";
             document.getElementById('s_pic').innerText = numPics + " Foto";
@@ -584,7 +577,6 @@
             document.getElementById('s_gsd').innerText = gsd.toFixed(2) + " cm/px";
             document.getElementById('s_dist_line').innerText = spacing.toFixed(1) + " m";
             
-            // Simpan path sementara untuk disave
             flightPath.properties = { nama_layer: document.getElementById('droneNama').value, gsd: gsd.toFixed(2), overlap: overlap, sidelap: sidelap, altitude_m: alt, speed_ms: speed, total_jarak_km: (distanceMeters/1000).toFixed(2), foto: numPics };
             tempDroneLayer.currentPath = flightPath;
         } else { 
@@ -598,7 +590,7 @@
     }
     function batalMisiDrone() { document.getElementById('modalDronePlanner').style.display = 'none'; if(currentDronePolygon) map.removeLayer(currentDronePolygon); tempDroneLayer.clearLayers(); currentDronePolygon = null; }
 
-    // --- ALGORITMA BATIMETRI FINAL (LIVE EDIT & BEZIER ORTOGONAL) ---
+    // --- ALGORITMA BATIMETRI FINAL ---
     var isDrawingBatimetri = false, currentBatiPolygon = null, tempBatiLayer = L.featureGroup().addTo(map);
     function bukaModalBatimetri() { document.getElementById('modalBatimetri').style.display = 'block'; updateBatiPreview(); }
     function mulaiGambarBatimetri() { document.getElementById('modalBatimetri').style.display = 'none'; isDrawingBatimetri = true; map.pm.enableDraw('Polygon', { snappable: false }); }
@@ -610,6 +602,10 @@
         var crossInterval = parseFloat(document.getElementById('batiCrossInterval').value) || 0;
         var curvePercent = parseFloat(document.getElementById('batiCurve').value) || 100;
         var mainOrient = document.getElementById('batiMainOrient').value;
+        
+        // Pencegah Infinite Loop saat edit interval
+        if (interval < 0.1) interval = 0.1;
+        
         var polyData = currentBatiPolygon.toGeoJSON();
         var centroid = turf.centroid(polyData);
         
@@ -626,6 +622,8 @@
             var ptMin = turf.point([minX, minY]), ptMaxY = turf.point([minX, maxY]);
             var totalHeight = turf.distance(ptMin, ptMaxY, {units: 'meters'}), numLinesReal = Math.floor(totalHeight / intv);
             var row_segments = []; var overshoot = 5; 
+            
+            if(numLinesReal > 5000) numLinesReal = 5000; // Pencegah Browser Crash
 
             var reverseOrder = false;
             if (!isOto) { if (isMainTrack) { if (mainOrient.includes('top-down') || mainOrient.includes('right-left')) reverseOrder = true; } else { if (mainOrient.includes('top-down') || mainOrient.includes('right-left')) reverseOrder = true; } }
@@ -660,10 +658,10 @@
         }
 
         var mainLine = buildContinuousTrack(baseAngle, interval, true);
-        if(mainLine) { mainLine.properties = { type: "Main Lines" }; L.geoJSON(mainLine, {style: {color: '#f59e0b', weight: 2}}).addTo(tempBatiLayer); tempBatiLayer.mainLine = mainLine; }
+        if(mainLine) { mainLine.properties = { type: "Main Lines" }; L.geoJSON(mainLine, {style: {color: '#f59e0b', weight: 2}, pmIgnore: true}).addTo(tempBatiLayer); tempBatiLayer.mainLine = mainLine; }
         if(crossInterval > 0) {
             var crossLine = buildContinuousTrack(baseAngle + 90, crossInterval, false);
-            if(crossLine) { crossLine.properties = { type: "Cross Lines" }; L.geoJSON(crossLine, {style: {color: '#06b6d4', weight: 2}}).addTo(tempBatiLayer); tempBatiLayer.crossLine = crossLine; }
+            if(crossLine) { crossLine.properties = { type: "Cross Lines" }; L.geoJSON(crossLine, {style: {color: '#06b6d4', weight: 2}, pmIgnore: true}).addTo(tempBatiLayer); tempBatiLayer.crossLine = crossLine; }
         }
     }
 
@@ -673,17 +671,20 @@
         fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: document.getElementById('batiNama').value, pengupload: currentUser.username, features: featuresToSave, geom_type: 'LineString' }) }).then(res => res.json()).then(d => { alert("Rute Survey Berhasil Disimpan!"); batalMisiBatimetri(); refreshSemuaData(); });
     }
 
-    // --- GEOMAN EDIT LISTENER: UPDATE JALUR SECARA REAL-TIME SAAT POLIGON DIGESER ---
+    // --- DEBOUNCER UNTUK MENCEGAH FREEZE SAAT LIVE EDIT (DRAG POLIGON) ---
+    var drnTm; function dbDrn() { clearTimeout(drnTm); drnTm = setTimeout(updateDronePreview, 150); }
+    var batTm; function dbBat() { clearTimeout(batTm); batTm = setTimeout(updateBatiPreview, 150); }
+
     map.on('pm:create', async function (e) {
         var layer = e.layer; 
         if(isDrawingDroneMode && e.shape === 'Polygon') { 
             isDrawingDroneMode = false; currentDronePolygon = layer; 
-            layer.on('pm:edit', updateDronePreview); layer.on('pm:markerdragend', updateDronePreview);
+            layer.on('pm:markerdrag', dbDrn); layer.on('pm:change', updateDronePreview); // Real-time render anti-freeze
             document.getElementById('modalDronePlanner').style.display = 'block'; updateDronePreview(); return; 
         }
         if(isDrawingBatimetri && e.shape === 'Polygon') { 
             isDrawingBatimetri = false; currentBatiPolygon = layer; 
-            layer.on('pm:edit', updateBatiPreview); layer.on('pm:markerdragend', updateBatiPreview);
+            layer.on('pm:markerdrag', dbBat); layer.on('pm:change', updateBatiPreview); // Real-time render anti-freeze
             document.getElementById('modalBatimetri').style.display = 'block'; updateBatiPreview(); return; 
         }
         var geojson = layer.toGeoJSON(); var tabel = document.getElementById('targetTabel').value; var attr = {}; attr.id = prompt("ID (Angka):", Math.floor(Math.random() * 90 + 10).toString()); if(!attr.id) { map.removeLayer(layer); return; }
@@ -715,6 +716,7 @@
 
     function prosesUploadSpasial() { var f = document.getElementById('fileShp').files[0]; var btn = document.getElementById('btnProsesShp'); if(!f) return alert("Pilih file terlebih dahulu!"); var ext = f.name.split('.').pop().toLowerCase(); var n = prompt("Beri nama layer untuk data ini:", f.name.replace('.'+ext, '')); if(!n) return; btn.innerHTML = "PROCESSING..."; var r = new FileReader(); if (ext === 'zip') { r.onload = function(e) { shp(e.target.result).then(function(g) { var features = Array.isArray(g) ? g[0].features : g.features; kirimDataSpasial(features, n, btn); }).catch(function(err) { console.error("Error SHPJS:", err); alert("Gagal membaca file ZIP!\nDetail Error: " + err.message); btn.innerHTML = "SIMPAN"; }); }; r.readAsArrayBuffer(f); } else if (ext === 'json' || ext === 'geojson') { r.onload = function(e) { try { var j = JSON.parse(e.target.result); var features = j.features || [j]; kirimDataSpasial(features, n, btn); } catch(err) { alert("Format JSON Error: " + err.message); btn.innerHTML = "SIMPAN"; } }; r.readAsText(f); } else if (ext === 'kml') { r.onload = function(e) { try { var dom = new DOMParser().parseFromString(e.target.result, 'text/xml'); var g = toGeoJSON.kml(dom); kirimDataSpasial(g.features, n, btn); } catch(err) { alert("Format KML Rusak: " + err.message); btn.innerHTML = "SIMPAN"; } }; r.readAsText(f); } else { alert("Format file tidak didukung!"); btn.innerHTML = "SIMPAN"; } }
     function kirimDataSpasial(ft, n, btn) { var geomType = document.querySelector('input[name="shpGeomType"]:checked').value; var uploader = currentUser ? currentUser.username : 'Admin'; fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: n, pengupload: uploader, features: ft, geom_type: geomType }) }).then(res => res.json()).then(d => { if (d.status === 'Success') { alert("Data Tersimpan!"); document.getElementById('modalShp').style.display='none'; } else { alert("Gagal: " + d.error); } btn.innerHTML = "SIMPAN"; refreshSemuaData(); }).catch(err => { alert("Error koneksi Server."); btn.innerHTML = "SIMPAN"; }); }
+
 </script>
 </body>
 </html>
