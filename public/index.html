@@ -10,7 +10,12 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
     
     <style>
-        :root { --bg-base: #ffffff; --bg-panel: #f8f9fa; --bg-hover: #e2e8f0; --border-color: #cbd5e1; --text-main: #1e293b; --text-muted: #64748b; --accent: #2563eb; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; }
+        :root {
+            --bg-base: #ffffff; --bg-panel: #f8f9fa; --bg-hover: #e2e8f0; --border-color: #cbd5e1;
+            --text-main: #1e293b; --text-muted: #64748b; --accent: #2563eb; --danger: #ef4444;
+            --success: #10b981; --warning: #f59e0b;
+        }
+
         body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background-color: var(--bg-base); color: var(--text-main); }
         .leaflet-container, .leaflet-interactive, .leaflet-grab, .leaflet-dragging .leaflet-grab, .leaflet-dragging .leaflet-grab .leaflet-interactive, .leaflet-dragging .leaflet-marker-draggable { cursor: default !important; }
         
@@ -45,6 +50,7 @@
         .login-btn { width: 100%; padding: 12px; background: var(--text-main); color: var(--bg-base); font-weight: 600; border: none;}
         .login-btn:hover { background: #334155; }
         .user-badge { font-size: 10px; border: 1px solid var(--border-color); background: var(--bg-base); padding: 3px 8px; border-radius: 4px; margin-left: 10px; display: none; font-weight: 600;}
+        .online-dot { height: 8px; width: 8px; background-color: #10b981; border-radius: 50%; display: inline-block; }
 
         #floating-toolbar { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 1000; }
         .btn-float { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(5px); border: 1px solid var(--border-color); color: var(--text-main); width: 44px; height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -158,9 +164,13 @@
     <button id="btnLokasi" class="btn-float"><span class="icon">📍</span><span class="label">Locate</span></button>
     <button id="btnLiveSync" class="btn-float"><span class="icon">🔄</span><span class="label" id="lblSync">Sync</span></button>
     <button class="btn-float" onclick="document.getElementById('modalShp').style.display='block'"><span class="icon">📁</span><span class="label">Import</span></button>
+    
+    <!-- TOMBOL DIGIT BANGUNAN BARU -->
+    <button class="btn-float" onclick="inisiasiDigitBangunan()"><span class="icon" style="color: var(--success);">🏢</span><span class="label" style="color: var(--success);">Bangunan</span></button>
+    
     <button class="btn-float" onclick="toggleGNSS()"><span class="icon">🛰️</span><span class="label">GNSS</span></button>
     <button class="btn-float" onclick="inisiasiModeDrone()"><span class="icon" style="color: var(--accent);">✈️</span><span class="label" style="color: var(--accent);">Drone</span></button>
-    <button class="btn-float" onclick="bukaModalBatimetri()"><span class="icon" style="color: var(--success);">🌊</span><span class="label" style="color: var(--success);">Survey</span></button>
+    <button class="btn-float" onclick="bukaModalBatimetri()"><span class="icon" style="color: var(--warning);">🌊</span><span class="label" style="color: var(--warning);">Survey</span></button>
     <button class="btn-float" onclick="bukaModalExport()"><span class="icon">📤</span><span class="label">Export</span></button>
     <button id="btnRouteToggle" class="btn-float"><span class="icon">🏁</span><span class="label">Rute</span></button>
     <button id="btnDistanceToggle" class="btn-float"><span class="icon">📏</span><span class="label">Jarak</span></button>
@@ -170,8 +180,7 @@
 
 <div id="gnss-panel" class="side-panel" style="width: 250px; bottom: 80px; right: 10px; padding: 15px; border-radius: 8px;">
     <h4 style="margin: 0 0 10px 0; font-weight: 700; color: var(--accent); display: flex; justify-content: space-between;">
-        <span>🛰️ STATUS GNSS RTK</span>
-        <span onclick="toggleGNSS()" style="cursor:pointer; color:var(--danger); font-size:14px;">&times;</span>
+        <span>🛰️ STATUS GNSS RTK</span><span onclick="toggleGNSS()" style="cursor:pointer; color:var(--danger); font-size:14px;">&times;</span>
     </h4>
     <div style="font-size: 11px; margin-bottom: 8px; font-family: monospace;">
         <div style="display:flex; justify-content:space-between; margin-bottom:4px; border-bottom:1px solid #eee; padding-bottom:4px;"><span>Status:</span><b id="gnss-status" style="color:var(--danger)">Disconnected</b></div>
@@ -181,7 +190,7 @@
         <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>Akurasi:</span><b id="gnss-acc">-</b></div>
         <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>Heading:</span><b id="gnss-head">-</b></div>
     </div>
-    <p style="font-size:8px; color:var(--text-muted); margin-bottom:12px; line-height:1.4;">*Untuk akurasi RTK (Centimeter Level), hubungkan device ini ke Receiver GNSS (Trimble/Emlid/South) dan gunakan aplikasi Mock Location (NTRIP Client) sebelum merekam data.</p>
+    <p style="font-size:8px; color:var(--text-muted); margin-bottom:12px; line-height:1.4;">*Untuk akurasi RTK (Centimeter Level), hubungkan device ini ke Receiver GNSS dan gunakan aplikasi Mock Location sebelum merekam data.</p>
     <div style="display: flex; gap: 5px;">
         <button class="modal-btn" style="padding:8px; margin:0;" onclick="toggleGNSS()">TUTUP</button>
         <button class="modal-btn" style="padding:8px; margin:0; background:var(--success); color:#fff; font-weight:bold;" onclick="rekamTitikGNSS()">📍 REKAM TITIK</button>
@@ -199,189 +208,17 @@
     <div class="toc-card"><div class="toc-card-title" onclick="toggleTOCList('list-shp_titik', this)"><span>▶ Layer: SHP Titik</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div><div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('shp_titik', this)">Hide Semua</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_titik')">Zoom Semua</button></div><div class="toc-feature-list" id="list-shp_titik"></div></div>
 </div>
 
-<div id="modalDronePlanner" class="modal-overlay">
-    <div class="modal-box" style="margin: 3% auto; width:480px;">
-        <div class="modal-box-header"><span>✈️ Drone Flight Planner (Live Edit)</span><span onclick="batalMisiDrone()" style="cursor:pointer; font-size:16px;">&times;</span></div>
-        <div class="modal-box-body">
-            <div class="input-row"><label>Nama Rute / Misi</label><input type="text" id="droneNama" value="Misi_Mapping_01" oninput="updateDronePreview()"></div>
-            
-            <div class="drone-group" style="margin-top:20px;">
-                <span class="drone-group-title">Hardware & Parameter</span>
-                <div class="input-row">
-                    <label>Kamera / Sensor</label>
-                    <select id="droneCamera" onchange="updateDronePreview()">
-                        <option value="phantom4rtk">DJI Phantom 4 RTK</option>
-                        <option value="mavic3e">DJI Mavic 3 Enterprise</option>
-                    </select>
-                </div>
-                <div class="input-row"><label>Ketinggian Terbang (m)</label><input type="number" id="droneAlt" value="100" min="10" oninput="updateDronePreview()"></div>
-                <div class="input-row"><label>Kecepatan Drone (m/s)</label><input type="number" id="droneSpeed" value="10" min="1" max="20" oninput="updateDronePreview()"></div>
-            </div>
+<!-- Modal-modal Lainnya (Drone, Batimetri, Export, dll) tetap di sini -->
+<div id="modalDronePlanner" class="modal-overlay"><div class="modal-box" style="margin: 3% auto; width:480px;"><div class="modal-box-header"><span>✈️ Drone Flight Planner (Live Edit)</span><span onclick="batalMisiDrone()" style="cursor:pointer; font-size:16px;">&times;</span></div><div class="modal-box-body"><div class="input-row"><label>Nama Rute / Misi</label><input type="text" id="droneNama" value="Misi_Mapping_01" oninput="dbDrn()"></div><div class="drone-group" style="margin-top:20px;"><span class="drone-group-title">Hardware & Parameter</span><div class="input-row"><label>Kamera / Sensor</label><select id="droneCamera" onchange="dbDrn()"><option value="phantom4rtk">DJI Phantom 4 RTK</option><option value="mavic3e">DJI Mavic 3 Enterprise</option></select></div><div class="input-row"><label>Ketinggian Terbang (m)</label><input type="number" id="droneAlt" value="100" min="10" oninput="dbDrn()"></div><div class="input-row"><label>Kecepatan Drone (m/s)</label><input type="number" id="droneSpeed" value="10" min="1" max="20" oninput="dbDrn()"></div></div><div class="drone-group"><span class="drone-group-title">Grid & Sapuan</span><div class="input-row"><label>Front Overlap (%)</label><input type="number" id="droneOverlap" value="80" min="10" max="95" oninput="dbDrn()"></div><div class="input-row"><label>Side Overlap / Sidelap (%)</label><input type="number" id="droneSidelap" value="70" min="10" max="95" oninput="dbDrn()"></div><div class="input-row"><label>Margin Keluar (m)</label><input type="number" id="droneMargin" value="10" min="0" oninput="dbDrn()"></div><label style="font-weight: 600; color: var(--text-muted); display: block; margin-top: 10px; font-size:11px;">Sudut Hatching (<span id="lblAngle">0</span>°)</label><input type="range" id="droneAngle" class="slider" min="0" max="360" value="0" style="width: 100%; margin-top: 5px; height: 4px;" oninput="dbDrn()"></div><p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Anda bisa menggeser/mengedit titik poligon di peta untuk mengubah rute ini secara Live!</p><div class="drone-stats" id="droneStats"><div><span>Area:</span><b id="s_area">-</b></div><div><span>Pictures:</span><b id="s_pic">-</b></div><div><span>Flight Time:</span><b id="s_time">-</b></div><div><span>Distance:</span><b id="s_dist">-</b></div><div><span>No of Strips:</span><b id="s_strip">-</b></div><div><span>Photo every:</span><b id="s_photo_every">-</b></div><div><span>Dist between img:</span><b id="s_dist_img">-</b></div><div><span>Footprint:</span><b id="s_footprint">-</b></div><div><span>Ground Resolution:</span><b id="s_gsd">-</b></div><div><span>Dist between lines:</span><b id="s_dist_line">-</b></div></div><div style="display: flex; gap: 10px; margin-top: 20px;"><button class="modal-btn" style="margin-top:0; border-color: var(--danger); color: var(--danger);" onclick="batalMisiDrone()">BATAL / HAPUS</button><button class="modal-btn" style="margin-top:0; background: var(--accent); color: white;" onclick="simpanMisiDrone()">SIMPAN MISI</button></div></div></div></div>
+<div id="modalBatimetri" class="modal-overlay"><div class="modal-box"><div class="modal-box-header"><span>🌊 Generator Survey / Batimetri</span><span onclick="document.getElementById('modalBatimetri').style.display='none'" style="cursor:pointer">&times;</span></div><div class="modal-box-body"><div id="batiBaruSection"><label>Nama Layer Rute:</label><input type="text" id="batiNama" class="modal-input" value="Survey_Batimetri_1" oninput="dbBat()"><div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-top: 10px; margin-bottom: 10px;"><label style="color: var(--text-main); font-weight: 700;">GAYA LINTASAN / JALUR</label><label style="margin-top: 8px; display: block; font-size:11px; font-weight:600;">Lengkungan Belokan (<span id="lblBatiCurve">100</span>%):</label><input type="range" id="batiCurve" class="slider" min="0" max="100" value="100" style="width: 100%; margin-top: 5px; margin-bottom: 8px;" oninput="document.getElementById('lblBatiCurve').innerText=this.value; dbBat();"><p style="font-size:9px; color:var(--text-muted); margin:0;">*0% = Sudut Tajam (Kotak) | 100% = U-Turn Penuh (Mulus).</p></div><div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px;"><label style="color: var(--text-main); font-weight: 700;">LAJUR UTAMA</label><div class="input-row"><label>Interval (m):</label><input type="number" id="batiInterval" value="50" min="1" oninput="dbBat()"></div><div class="input-row"><label>Acuan Start:</label><select id="batiMainOrient" onchange="dbBat()"><option value="longest|inward" selected>★ Otomatis Sisi Terpanjang</option><option value="horizontal|top-down">Manual: Horizontal (Atas-Bawah)</option><option value="horizontal|bottom-up">Manual: Horizontal (Bawah-Atas)</option><option value="vertical|left-right">Manual: Vertikal (Kiri-Kanan)</option><option value="vertical|right-left">Manual: Vertikal (Kanan-Kiri)</option></select></div></div><div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px;"><label style="color: var(--text-main); font-weight: 700;">LAJUR LINTAS (Tegak Lurus)</label><div class="input-row"><label>Interval (m):</label><input type="number" id="batiCrossInterval" value="150" min="0" oninput="dbBat()"></div><div class="input-row"><label>Arah Sapuan Lintas:</label><select id="batiCrossOrient" onchange="dbBat()"><option value="vertical|left-right" selected>Otomatis / Kiri-Kanan</option><option value="vertical|right-left">Manual: Kanan-Kiri</option><option value="horizontal|top-down">Manual: Atas-Bawah</option><option value="horizontal|bottom-up">Manual: Bawah-Atas</option></select></div><p style="font-size:9px; color:var(--text-muted); margin-top:5px; margin-bottom:0;">*Isi 0 jika hanya ingin 1 arah (Tanpa Jalur Lintas).</p></div><p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Anda bisa menggeser/mengedit titik poligon di peta untuk merubah jalur secara Live!</p><div style="display: flex; gap: 10px; margin-top: 15px;"><button class="modal-btn" style="border-color: var(--danger); color: var(--danger);" onclick="batalMisiBatimetri()">BATAL</button><button class="modal-btn" style="background: var(--success); color: white;" onclick="simpanMisiBatimetri()">SIMPAN RUTE SURVEY</button></div></div><div id="batiEditSection" style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);"><p style="font-weight:700; margin-top:0;">Edit Tanpa Gambar Ulang</p><label>Lengkungan BARU (%):</label><input type="range" id="editBatiCurve" class="slider" min="0" max="100" style="width:100%; margin-bottom:10px;"><label>Interval Utama BARU (m):</label><input type="number" id="editBatiInterval" class="modal-input" min="1"><label>Interval Lintas BARU (m):</label><input type="number" id="editBatiCrossInterval" class="modal-input" min="0"><button class="modal-btn" style="background: var(--warning); color: white; border-color: var(--warning);" onclick="prosesEditBatimetri()">UPDATE LAJUR</button></div></div></div></div>
+<div id="modalOnlineUsers" class="modal-overlay"><div class="modal-box" style="width: 700px;"><div class="modal-box-header"><span>Pemantauan User Real-time</span><span onclick="tutupModalOnline()" style="cursor:pointer">&times;</span></div><div class="modal-box-body"><table><thead><tr><th style="width: 30px;">#</th><th>Username</th><th style="width: 15%;">Password</th><th>Level</th><th>Status</th><th>Terakhir Aktif</th></tr></thead><tbody id="onlineUsersBody"></tbody></table></div></div></div>
+<div id="modalExport" class="modal-overlay"><div class="modal-box"><div class="modal-box-header"><span>Export Data Spasial</span><span onclick="document.getElementById('modalExport').style.display='none'" style="cursor:pointer">&times;</span></div><div class="modal-box-body"><label style="display: block; font-weight: 600; margin-bottom: 5px;">1. Pilih Kategori Tabel:</label><select id="exportTableSelect" class="modal-input" onchange="loadExportSubLayers()"><option value="jalan">Jalan</option><option value="landuse">Landuse</option><option value="tower">Tower</option><option value="wilayah">Wilayah</option><option value="shp_poligon">SHP Poligon</option><option value="shp_garis" selected>SHP Garis / Rute Drone</option><option value="shp_titik">SHP Titik</option><option value="users">Daftar Users</option></select><label style="display: block; font-weight: 600; margin-top: 10px; margin-bottom: 5px;">2. Pilih Spesifik File / Rute <br><span style="font-size: 10px; color: var(--accent); font-weight:normal;">*Tahan tombol <b>CTRL</b> untuk memilih banyak data sekaligus</span></label><select id="exportLayerSelect" class="modal-input" multiple style="height: 120px; font-size:11px;"><option value="ALL" selected>Semua Data di Tabel Ini</option></select><p style="font-size: 10px; color: var(--text-muted); margin-top: 8px;">*Catatan: Jika memilih banyak data, file akan tergabung menjadi 1 file download.</p><div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;"><button class="modal-btn" style="flex: 1 1 100%; margin-top: 0; border-color: var(--success); color: var(--success);" onclick="eksekusiExportExcel()">Download Excel (.xlsx)</button><button class="modal-btn" style="flex:1;" onclick="eksekusiExportGeoJSON()">GeoJSON</button><button class="modal-btn" style="flex:1;" onclick="eksekusiExportKML()">KML</button></div></div></div></div>
+<div id="modalShp" class="modal-overlay"><div class="modal-box"><div class="modal-box-header"><span>Import Spasial</span><span onclick="document.getElementById('modalShp').style.display='none'" style="cursor:pointer">&times;</span></div><div class="modal-box-body"><label>File (.zip, .json, .kml):</label><input type="file" id="fileShp" class="modal-input" accept=".zip,.json,.geojson,.kml"><label>Geometri:</label><div style="display: flex; gap: 10px; margin-bottom: 15px;"><label><input type="radio" name="shpGeomType" value="auto" checked> Auto</label><label><input type="radio" name="shpGeomType" value="Polygon"> Poligon</label><label><input type="radio" name="shpGeomType" value="LineString"> Garis</label><label><input type="radio" name="shpGeomType" value="Point"> Titik</label></div><button class="modal-btn" style="background: var(--text-main); color: var(--bg-base);" id="btnProsesShp" onclick="prosesUploadSpasial()">SIMPAN</button></div></div></div>
+<div id="modalHapusShp" class="modal-overlay"><div class="modal-box"><div class="modal-box-header"><span>Hapus Layer</span><span onclick="document.getElementById('modalHapusShp').style.display='none'" style="cursor:pointer">&times;</span></div><div class="modal-box-body"><label>Pilih Layer:</label><select id="delShpList" class="modal-input"></select><button class="modal-btn" style="background: var(--danger); color: white; border-color: var(--danger);" onclick="eksekusiHapusShp()">HAPUS PERMANEN</button></div></div></div>
+<div id="modalQuery" class="modal-overlay"><div class="modal-sql"><div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;"><h3 style="margin: 0; font-size: 14px; text-transform: uppercase;">SQL Console (PostGIS)</h3><span id="closeModal" style="cursor: pointer; font-size: 18px; font-weight: bold;">&times;</span></div><div style="margin-bottom: 15px;"><button id="btnQJalan" class="btn-query-nav">Jalan</button><button id="btnQWilayah" class="btn-query-nav">Wilayah</button><button id="btnQShpPoligon" class="btn-query-nav">Poligon</button><button id="btnQShpGaris" class="btn-query-nav">Garis</button></div><textarea id="sqlInput" style="width: 100%; height: 100px; box-sizing: border-box;"></textarea><div style="display: flex; gap: 10px; margin-top: 10px;"><button id="runQuery" class="modal-btn" style="margin:0; background: var(--text-main); color: var(--bg-base);">RUN</button><button id="resetQuery" class="modal-btn" style="margin:0;">CLEAR</button></div><div style="max-height: 200px; overflow-y: auto; margin-top: 15px;"><table><thead id="tableHead"></thead><tbody id="tableBody"></tbody></table></div></div></div>
 
-            <div class="drone-group">
-                <span class="drone-group-title">Grid & Sapuan</span>
-                <div class="input-row"><label>Front Overlap (%)</label><input type="number" id="droneOverlap" value="80" min="10" max="95" oninput="updateDronePreview()"></div>
-                <div class="input-row"><label>Side Overlap / Sidelap (%)</label><input type="number" id="droneSidelap" value="70" min="10" max="95" oninput="updateDronePreview()"></div>
-                <div class="input-row"><label>Margin Keluar (m)</label><input type="number" id="droneMargin" value="10" min="0" oninput="updateDronePreview()"></div>
-                <label style="font-weight: 600; color: var(--text-muted); display: block; margin-top: 10px; font-size:11px;">Sudut Hatching (<span id="lblAngle">0</span>°)</label>
-                <input type="range" id="droneAngle" class="slider" min="0" max="360" value="0" style="width: 100%; margin-top: 5px; height: 4px;" oninput="updateDronePreview()">
-            </div>
-
-            <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Anda bisa menggeser/mengedit titik poligon di peta untuk mengubah rute ini secara Live!</p>
-
-            <div class="drone-stats" id="droneStats">
-                <div><span>Area:</span><b id="s_area">-</b></div>
-                <div><span>Pictures:</span><b id="s_pic">-</b></div>
-                <div><span>Flight Time:</span><b id="s_time">-</b></div>
-                <div><span>Distance:</span><b id="s_dist">-</b></div>
-                <div><span>No of Strips:</span><b id="s_strip">-</b></div>
-                <div><span>Photo every:</span><b id="s_photo_every">-</b></div>
-                <div><span>Dist between images:</span><b id="s_dist_img">-</b></div>
-                <div><span>Footprint:</span><b id="s_footprint">-</b></div>
-                <div><span>Ground Resolution:</span><b id="s_gsd">-</b></div>
-                <div><span>Dist between lines:</span><b id="s_dist_line">-</b></div>
-            </div>
-
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="modal-btn" style="margin-top:0; border-color: var(--danger); color: var(--danger);" onclick="batalMisiDrone()">BATAL / HAPUS</button>
-                <button class="modal-btn" style="margin-top:0; background: var(--accent); color: white;" onclick="simpanMisiDrone()">SIMPAN MISI</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="modalBatimetri" class="modal-overlay">
-    <div class="modal-box">
-        <div class="modal-box-header"><span>🌊 Generator Survey / Batimetri</span><span onclick="document.getElementById('modalBatimetri').style.display='none'" style="cursor:pointer">&times;</span></div>
-        <div class="modal-box-body">
-            <div id="batiBaruSection">
-                <label>Nama Layer Rute:</label><input type="text" id="batiNama" class="modal-input" value="Survey_Batimetri_1" oninput="updateBatiPreview()">
-                
-                <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-top: 10px; margin-bottom: 10px;">
-                    <label style="color: var(--text-main); font-weight: 700;">GAYA LINTASAN / JALUR</label>
-                    <label style="margin-top: 8px; display: block; font-size:11px; font-weight:600;">Lengkungan Belokan (<span id="lblBatiCurve">100</span>%):</label>
-                    <input type="range" id="batiCurve" class="slider" min="0" max="100" value="100" style="width: 100%; margin-top: 5px; margin-bottom: 8px;" oninput="document.getElementById('lblBatiCurve').innerText=this.value; updateBatiPreview();">
-                    <p style="font-size:9px; color:var(--text-muted); margin:0;">*0% = Sudut Tajam (Kotak) | 100% = U-Turn Penuh (Mulus).</p>
-                </div>
-                
-                <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px;">
-                    <label style="color: var(--text-main); font-weight: 700;">LAJUR UTAMA</label>
-                    <div class="input-row"><label>Interval (m):</label><input type="number" id="batiInterval" value="50" min="1" oninput="updateBatiPreview()"></div>
-                    <div class="input-row"><label>Acuan Start:</label>
-                    <select id="batiMainOrient" onchange="updateBatiPreview()">
-                        <option value="longest|inward" selected>★ Otomatis Sisi Terpanjang</option>
-                        <option value="horizontal|top-down">Manual: Horizontal (Atas-Bawah)</option>
-                        <option value="horizontal|bottom-up">Manual: Horizontal (Bawah-Atas)</option>
-                        <option value="vertical|left-right">Manual: Vertikal (Kiri-Kanan)</option>
-                        <option value="vertical|right-left">Manual: Vertikal (Kanan-Kiri)</option>
-                    </select></div>
-                </div>
-                
-                <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px;">
-                    <label style="color: var(--text-main); font-weight: 700;">LAJUR LINTAS (Tegak Lurus)</label>
-                    <div class="input-row"><label>Interval (m):</label><input type="number" id="batiCrossInterval" value="150" min="0" oninput="updateBatiPreview()"></div>
-                    <p style="font-size:9px; color:var(--text-muted); margin-top:0px; margin-bottom:0;">*Isi 0 jika hanya ingin 1 arah.</p>
-                </div>
-
-                <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Anda bisa menggeser/mengedit titik poligon di peta untuk merubah jalur secara Live!</p>
-                
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button class="modal-btn" style="border-color: var(--danger); color: var(--danger);" onclick="batalMisiBatimetri()">BATAL</button>
-                    <button class="modal-btn" style="background: var(--success); color: white;" onclick="simpanMisiBatimetri()">SIMPAN RUTE SURVEY</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- PEMBARUAN: MODAL ONLINE USERS DITAMBAHKAN KOLOM PASSWORD -->
-<div id="modalOnlineUsers" class="modal-overlay">
-    <div class="modal-box" style="width: 700px;">
-        <div class="modal-box-header"><span>Pemantauan User Real-time</span><span onclick="tutupModalOnline()" style="cursor:pointer">&times;</span></div>
-        <div class="modal-box-body">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 30px;">#</th>
-                        <th>Username</th>
-                        <th style="width: 15%;">Password</th>
-                        <th>Level</th>
-                        <th>Status</th>
-                        <th>Terakhir Aktif</th>
-                    </tr>
-                </thead>
-                <tbody id="onlineUsersBody"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<div id="modalExport" class="modal-overlay">
-    <div class="modal-box">
-        <div class="modal-box-header"><span>Export Data Spasial</span><span onclick="document.getElementById('modalExport').style.display='none'" style="cursor:pointer">&times;</span></div>
-        <div class="modal-box-body">
-            <label style="display: block; font-weight: 600; margin-bottom: 5px;">1. Pilih Kategori Tabel:</label>
-            <select id="exportTableSelect" class="modal-input" onchange="loadExportSubLayers()">
-                <option value="jalan">Jalan</option><option value="landuse">Landuse</option><option value="tower">Tower</option>
-                <option value="wilayah">Wilayah</option><option value="shp_poligon">SHP Poligon</option><option value="shp_garis" selected>SHP Garis / Rute Drone</option>
-                <option value="shp_titik">SHP Titik</option><option value="users">Daftar Users</option>
-            </select>
-            <label style="display: block; font-weight: 600; margin-top: 10px; margin-bottom: 5px;">2. Pilih Spesifik File / Rute <br><span style="font-size: 10px; color: var(--accent); font-weight:normal;">*Tahan tombol <b>CTRL</b> untuk memilih banyak data sekaligus</span></label>
-            <select id="exportLayerSelect" class="modal-input" multiple style="height: 120px; font-size:11px;"><option value="ALL" selected>Semua Data di Tabel Ini</option></select>
-            <p style="font-size: 10px; color: var(--text-muted); margin-top: 8px;">*Catatan: Jika memilih banyak data, file akan tergabung menjadi 1 file download.</p>
-            <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
-                <button class="modal-btn" style="flex: 1 1 100%; margin-top: 0; border-color: var(--success); color: var(--success);" onclick="eksekusiExportExcel()">Download Excel (.xlsx)</button>
-                <button class="modal-btn" style="flex:1;" onclick="eksekusiExportGeoJSON()">GeoJSON</button><button class="modal-btn" style="flex:1;" onclick="eksekusiExportKML()">KML</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="modalShp" class="modal-overlay">
-    <div class="modal-box">
-        <div class="modal-box-header"><span>Import Spasial</span><span onclick="document.getElementById('modalShp').style.display='none'" style="cursor:pointer">&times;</span></div>
-        <div class="modal-box-body">
-            <label>File (.zip, .json, .kml):</label><input type="file" id="fileShp" class="modal-input" accept=".zip,.json,.geojson,.kml">
-            <label>Geometri:</label>
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <label><input type="radio" name="shpGeomType" value="auto" checked> Auto</label><label><input type="radio" name="shpGeomType" value="Polygon"> Poligon</label><label><input type="radio" name="shpGeomType" value="LineString"> Garis</label><label><input type="radio" name="shpGeomType" value="Point"> Titik</label>
-            </div>
-            <button class="modal-btn" style="background: var(--text-main); color: var(--bg-base);" id="btnProsesShp" onclick="prosesUploadSpasial()">SIMPAN</button>
-        </div>
-    </div>
-</div>
-
-<div id="modalHapusShp" class="modal-overlay">
-    <div class="modal-box">
-        <div class="modal-box-header"><span>Hapus Layer</span><span onclick="document.getElementById('modalHapusShp').style.display='none'" style="cursor:pointer">&times;</span></div>
-        <div class="modal-box-body">
-            <label>Pilih Layer:</label><select id="delShpList" class="modal-input"></select><button class="modal-btn" style="background: var(--danger); color: white; border-color: var(--danger);" onclick="eksekusiHapusShp()">HAPUS PERMANEN</button>
-        </div>
-    </div>
-</div>
-
-<div id="modalQuery" class="modal-overlay">
-    <div class="modal-sql">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-            <h3 style="margin: 0; font-size: 14px; text-transform: uppercase;">SQL Console (PostGIS)</h3><span id="closeModal" style="cursor: pointer; font-size: 18px; font-weight: bold;">&times;</span>
-        </div>
-        <div style="margin-bottom: 15px;">
-            <button id="btnQJalan" class="btn-query-nav">Jalan</button><button id="btnQWilayah" class="btn-query-nav">Wilayah</button><button id="btnQShpPoligon" class="btn-query-nav">Poligon</button><button id="btnQShpGaris" class="btn-query-nav">Garis</button>
-        </div>
-        <textarea id="sqlInput" style="width: 100%; height: 100px; box-sizing: border-box;"></textarea>
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <button id="runQuery" class="modal-btn" style="margin:0; background: var(--text-main); color: var(--bg-base);">RUN</button><button id="resetQuery" class="modal-btn" style="margin:0;">CLEAR</button>
-        </div>
-        <div style="max-height: 200px; overflow-y: auto; margin-top: 15px;"><table><thead id="tableHead"></thead><tbody id="tableBody"></tbody></table></div>
-    </div>
-</div>
-
-<div id="route-panel" class="side-panel">
-    <h4 style="margin: 0 0 10px 0; font-weight: 600;">Rute Terpendek</h4><div id="route-info" style="font-size: 11px; color: var(--text-muted);">Klik 2 titik di peta...</div><button id="btnResetRoute" class="modal-btn" style="border-color: var(--danger); color: var(--danger);">RESET RUTE</button>
-</div>
-<div id="distance-panel" class="side-panel">
-    <h4 style="margin: 0 0 10px 0; font-weight: 600;">Hitung Jarak</h4><div id="distance-info" style="font-size: 11px; color: var(--text-muted);">Klik titik di peta...</div><button id="btnResetDistance" class="modal-btn" style="border-color: var(--danger); color: var(--danger);">RESET JARAK</button>
-</div>
+<div id="route-panel" class="side-panel"><h4 style="margin: 0 0 10px 0; font-weight: 600;">Rute Terpendek</h4><div id="route-info" style="font-size: 11px; color: var(--text-muted);">Klik 2 titik di peta...</div><button id="btnResetRoute" class="modal-btn" style="border-color: var(--danger); color: var(--danger);">RESET RUTE</button></div>
+<div id="distance-panel" class="side-panel"><h4 style="margin: 0 0 10px 0; font-weight: 600;">Hitung Jarak</h4><div id="distance-info" style="font-size: 11px; color: var(--text-muted);">Klik titik di peta...</div><button id="btnResetDistance" class="modal-btn" style="border-color: var(--danger); color: var(--danger);">RESET JARAK</button></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
@@ -394,9 +231,6 @@
 <script>
     let currentUser = null; let currentLoginType = 'user'; let heartbeatInterval, onlinePollingInterval;
     const defaultColors = { 'jalan': '#3b82f6', 'landuse': '#10b981', 'tower': '#f59e0b', 'wilayah': '#8b5cf6', 'shp_poligon': '#06b6d4', 'shp_garis': '#ef4444', 'shp_titik': '#ec4899' };
-
-    const tabelList = ['jalan', 'landuse', 'tower', 'wilayah'];
-    tabelList.forEach(t => { fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS properties jsonb DEFAULT '{}'::jsonb;` }) }).catch(()=>{}); });
 
     var map = L.map('map', { preferCanvas: true, zoomControl: false }).setView([-5.3971, 105.2668], 10);
     L.control.zoom({ position: 'topright' }).addTo(map);
@@ -441,7 +275,6 @@
     function aturHakAkses() { const adminElements = document.querySelectorAll('.admin-only'); if (currentUser.role !== 'admin') adminElements.forEach(el => el.style.display = 'none'); else adminElements.forEach(el => el.style.display = 'flex'); }
     function mulaiHeartbeat() { if (heartbeatInterval) clearInterval(heartbeatInterval); heartbeatInterval = setInterval(() => { if (currentUser) { fetch('/api/heartbeat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser.username, role: currentUser.role }) }).catch(() => {}); } }, 5000); }
     
-    // PEMBARUAN: Menu Pemantauan User untuk Menampilkan Password
     function bukaModalOnline() { document.getElementById('modalOnlineUsers').style.display = 'block'; fetchOnlineUsers(); onlinePollingInterval = setInterval(fetchOnlineUsers, 3000); }
     function tutupModalOnline() { document.getElementById('modalOnlineUsers').style.display = 'none'; clearInterval(onlinePollingInterval); }
     function fetchOnlineUsers() { 
@@ -453,14 +286,10 @@
                     let timeStr = "-";
                     if(u.last_login) {
                         let d = new Date(u.last_login);
-                        let hrs = String(d.getHours()).padStart(2, '0');
-                        let mins = String(d.getMinutes()).padStart(2, '0');
-                        let day = String(d.getDate()).padStart(2, '0');
-                        let mo = String(d.getMonth() + 1).padStart(2, '0');
-                        let yr = d.getFullYear();
+                        let hrs = String(d.getHours()).padStart(2, '0'); let mins = String(d.getMinutes()).padStart(2, '0');
+                        let day = String(d.getDate()).padStart(2, '0'); let mo = String(d.getMonth() + 1).padStart(2, '0'); let yr = d.getFullYear();
                         timeStr = `${hrs}:${mins} WIB | ${day}/${mo}/${yr}`;
                     }
-                    // PEMBARUAN: Menambahkan kolom password ke dalam baris HTML yang dirender (u.password)
                     tb.innerHTML += `<tr><td style="text-align: center;">${index + 1}</td><td style="font-weight: 600; text-transform:uppercase;">${u.username}</td><td style="font-family: monospace; color: var(--accent); font-weight: bold;">${u.password}</td><td style="color: var(--text-muted);">${u.role === 'admin' ? 'Admin' : 'User'}</td><td>${statusLabel}</td><td style="font-size:10px; color:var(--text-muted); font-family:monospace;">${u.isActive ? 'Sedang Online' : timeStr}</td></tr>`; 
                 }); 
             } 
@@ -618,12 +447,12 @@
                     } 
                 }
 
-                // DYNAMIC PADDING + SLIVER POLYGON SLICING (RUMUS PALING AKURAT & ANTI ERROR)
                 var pad = Math.max((maxX - minX) * 0.5, 0.05);
 
                 for(var i=0; i<=numLinesReal; i++) {
                     var stepDist = reverseOrder ? (totalHeight - (i * intv) - (intv/2)) : (i * intv + (intv/2));
                     if (stepDist < 0 || stepDist > totalHeight) continue;
+                    
                     var yPt = turf.destination(ptMin, stepDist, 0, {units: 'meters'});
                     var y = yPt.geometry.coordinates[1];
                     
@@ -670,10 +499,12 @@
                             }
                         }
                     }
+
                     if(goingRight) { continuousCoords.push(row.left); continuousCoords.push(row.right); } 
                     else { continuousCoords.push(row.right); continuousCoords.push(row.left); }
                     goingRight = !goingRight;
                 }
+
                 return turf.transformRotate(turf.lineString(continuousCoords), angleDeg, {pivot: centroid});
             }
 
@@ -692,11 +523,97 @@
         fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: document.getElementById('batiNama').value, pengupload: currentUser.username, features: featuresToSave, geom_type: 'LineString' }) }).then(res => res.json()).then(d => { alert("Rute Survey Berhasil Disimpan!"); batalMisiBatimetri(); refreshSemuaData(); });
     }
 
+    // --- FITUR BARU: DIGIT BANGUNAN OTOMATIS OSM ---
+    var isDrawingDigitBangunan = false;
+    function inisiasiDigitBangunan() {
+        alert("Gambarlah sebuah area poligon di peta.\nSistem akan otomatis mendeteksi dan mengekstrak semua bangunan dari satelit (OpenStreetMap) di dalam area tersebut!");
+        isDrawingDigitBangunan = true;
+        map.pm.enableDraw('Polygon', { snappable: false, hintlineStyle: { color: '#06b6d4', dashArray: '5,5' }, pathOptions: { color: '#06b6d4', fillColor: '#06b6d4', fillOpacity: 0.2 } });
+    }
+
+    async function prosesDigitBangunan(layer) {
+        let namaLayer = prompt("Masukkan Nama Grup Layer untuk Bangunan:", "Digit_Bangunan_01");
+        if (!namaLayer) { map.removeLayer(layer); return; }
+        
+        let userDrawnPolygon = layer.toGeoJSON();
+        let bbox = turf.bbox(userDrawnPolygon);
+        let minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
+
+        alert("Memproses ekstraksi bangunan... Mohon tunggu beberapa detik.");
+
+        let query = `[out:json][timeout:25];(way["building"](${minY},${minX},${maxY},${maxX});relation["building"](${minY},${minX},${maxY},${maxX}););out geom;`;
+        let url = "https://overpass-api.de/api/interpreter";
+
+        try {
+            let response = await fetch(url, { method: 'POST', body: "data=" + encodeURIComponent(query), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+            let data = await response.json();
+
+            let rawFeatures = [];
+            data.elements.forEach(el => {
+                if (el.type === 'way' && el.geometry) {
+                    let coords = el.geometry.map(pt => [pt.lon, pt.lat]);
+                    if (coords.length >= 3) {
+                        if (coords[0][0] !== coords[coords.length-1][0] || coords[0][1] !== coords[coords.length-1][1]) coords.push(coords[0]);
+                        if(coords.length >= 4) {
+                            let poly = turf.polygon([coords], el.tags || {});
+                            if (turf.booleanIntersects(poly, userDrawnPolygon)) rawFeatures.push(poly);
+                        }
+                    }
+                }
+            });
+
+            if (rawFeatures.length === 0) { alert("Tidak ditemukan bangunan pada database satelit di area ini."); map.removeLayer(layer); return; }
+
+            let finalFeatures = [];
+            for (let i = 0; i < rawFeatures.length; i++) {
+                let poly = rawFeatures[i];
+                let coords = turf.getCoords(poly)[0];
+                let maxD = 0, angle = 0;
+                
+                // Cari sisi terpanjang untuk jadi acuan "Kotak Sempurna" 90 derajat
+                for (let j = 0; j < coords.length - 1; j++) {
+                    let p1 = turf.point(coords[j]), p2 = turf.point(coords[j+1]);
+                    let d = turf.distance(p1, p2);
+                    if (d > maxD) { maxD = d; angle = turf.bearing(p1, p2); }
+                }
+                
+                let centroid = turf.centroid(poly);
+                let rotated = turf.transformRotate(poly, -angle, {pivot: centroid});
+                let bboxPoly = turf.envelope(rotated);
+                let perfectSquare = turf.transformRotate(bboxPoly, angle, {pivot: centroid});
+                
+                perfectSquare.properties = { nama_layer: namaLayer, tipe: "Bangunan (Auto)", osm_id: poly.properties.id || '-' };
+
+                // Anti-Overlap Logic (Max 20% toleransi overlap)
+                let isOverlapping = false;
+                for (let f of finalFeatures) {
+                    try {
+                        if (turf.booleanIntersects(perfectSquare, f)) {
+                            let intersectArea = turf.intersect(perfectSquare, f);
+                            if (intersectArea) {
+                                let a1 = turf.area(perfectSquare), a2 = turf.area(f), aInt = turf.area(intersectArea);
+                                if (aInt > (Math.min(a1, a2) * 0.2)) { isOverlapping = true; break; }
+                            }
+                        }
+                    } catch(e) {}
+                }
+                if (!isOverlapping) finalFeatures.push(perfectSquare);
+            }
+
+            if (finalFeatures.length === 0) { alert("Semua bangunan bertumpuk dan ditolak oleh sistem Anti-Overlap."); map.removeLayer(layer); return; }
+
+            fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: namaLayer, pengupload: currentUser ? currentUser.username : 'Admin', features: finalFeatures, geom_type: 'Polygon' }) })
+            .then(res => res.json()).then(d => { alert(finalFeatures.length + " Bangunan Berhasil Tengekstrak & Tersimpan secara otomatis!"); map.removeLayer(layer); refreshSemuaData(); });
+
+        } catch (err) { console.error(err); alert("Gagal mengambil data dari Server OSM!"); map.removeLayer(layer); }
+    }
+
     var drnTm; function dbDrn() { clearTimeout(drnTm); drnTm = setTimeout(updateDronePreview, 150); }
     var batTm; function dbBat() { clearTimeout(batTm); batTm = setTimeout(updateBatiPreview, 150); }
 
     map.on('pm:create', async function (e) {
         var layer = e.layer; 
+        if(isDrawingDigitBangunan && e.shape === 'Polygon') { isDrawingDigitBangunan = false; prosesDigitBangunan(layer); return; }
         if(isDrawingDroneMode && e.shape === 'Polygon') { 
             isDrawingDroneMode = false; currentDronePolygon = layer; 
             layer.on('pm:markerdrag', dbDrn); layer.on('pm:change', updateDronePreview);
