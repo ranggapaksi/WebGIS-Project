@@ -210,28 +210,45 @@
     <div class="modal-box" style="margin: 3% auto; width:480px;">
         <div class="modal-box-header"><span>✈️ Drone Flight Planner (Live Edit)</span><span onclick="batalMisiDrone()" style="cursor:pointer; font-size:16px;">&times;</span></div>
         <div class="modal-box-body">
-            <div class="input-row"><label>Nama Rute / Misi</label><input type="text" id="droneNama" value="Misi_Mapping_01" oninput="updateDronePreview()"></div>
+            <div class="input-row"><label>Nama Rute / Misi</label><input type="text" id="droneNama" value="Misi_Mapping_01" oninput="dbDrn()"></div>
+            
             <div class="drone-group" style="margin-top:20px;">
                 <span class="drone-group-title">Hardware & Parameter</span>
-                <div class="input-row"><label>Kamera / Sensor</label><select id="droneCamera" onchange="updateDronePreview()"><option value="phantom4rtk">DJI Phantom 4 RTK</option><option value="mavic3e">DJI Mavic 3 Enterprise</option></select></div>
-                <div class="input-row"><label>Ketinggian Terbang (m)</label><input type="number" id="droneAlt" value="100" min="10" oninput="updateDronePreview()"></div>
-                <div class="input-row"><label>Kecepatan Drone (m/s)</label><input type="number" id="droneSpeed" value="10" min="1" max="20" oninput="updateDronePreview()"></div>
+                <div class="input-row">
+                    <label>Kamera / Sensor</label>
+                    <select id="droneCamera" onchange="dbDrn()">
+                        <option value="phantom4rtk">DJI Phantom 4 RTK</option>
+                        <option value="mavic3e">DJI Mavic 3 Enterprise</option>
+                    </select>
+                </div>
+                <div class="input-row"><label>Keting Terbang (m)</label><input type="number" id="droneAlt" value="100" min="10" oninput="dbDrn()"></div>
+                <div class="input-row"><label>Kecepatan Drone (m/s)</label><input type="number" id="droneSpeed" value="10" min="1" max="20" oninput="dbDrn()"></div>
             </div>
+
             <div class="drone-group">
                 <span class="drone-group-title">Grid & Sapuan</span>
-                <div class="input-row"><label>Front Overlap (%)</label><input type="number" id="droneOverlap" value="80" min="10" max="95" oninput="updateDronePreview()"></div>
-                <div class="input-row"><label>Side Overlap / Sidelap (%)</label><input type="number" id="droneSidelap" value="70" min="10" max="95" oninput="updateDronePreview()"></div>
-                <div class="input-row"><label>Margin Keluar (m)</label><input type="number" id="droneMargin" value="10" min="0" oninput="updateDronePreview()"></div>
+                <div class="input-row"><label>Front Overlap (%)</label><input type="number" id="droneOverlap" value="80" min="10" max="95" oninput="dbDrn()"></div>
+                <div class="input-row"><label>Side Overlap / Sidelap (%)</label><input type="number" id="droneSidelap" value="70" min="10" max="95" oninput="dbDrn()"></div>
+                <div class="input-row"><label>Margin Keluar (m)</label><input type="number" id="droneMargin" value="10" min="0" oninput="dbDrn()"></div>
                 <label style="font-weight: 600; color: var(--text-muted); display: block; margin-top: 10px; font-size:11px;">Sudut Hatching (<span id="lblAngle">0</span>°)</label>
-                <input type="range" id="droneAngle" class="slider" min="0" max="360" value="0" style="width: 100%; margin-top: 5px; height: 4px;" oninput="updateDronePreview()">
+                <input type="range" id="droneAngle" class="slider" min="0" max="360" value="0" style="width: 100%; margin-top: 5px; height: 4px;" oninput="dbDrn()">
             </div>
-            <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Anda bisa menggeser/mengedit titik poligon di peta untuk mengubah rute ini secara Live!</p>
+
+            <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Anda bisa menggeser titik poligon di peta untuk mengubah rute ini secara Live!</p>
+
             <div class="drone-stats" id="droneStats">
-                <div><span>Area:</span><b id="s_area">-</b></div><div><span>Pictures:</span><b id="s_pic">-</b></div><div><span>Flight Time:</span><b id="s_time">-</b></div>
-                <div><span>Distance:</span><b id="s_dist">-</b></div><div><span>No of Strips:</span><b id="s_strip">-</b></div><div><span>Photo every:</span><b id="s_photo_every">-</b></div>
-                <div><span>Dist between img:</span><b id="s_dist_img">-</b></div><div><span>Footprint:</span><b id="s_footprint">-</b></div><div><span>Ground Resolution:</span><b id="s_gsd">-</b></div>
+                <div><span>Area:</span><b id="s_area">-</b></div>
+                <div><span>Pictures:</span><b id="s_pic">-</b></div>
+                <div><span>Flight Time:</span><b id="s_time">-</b></div>
+                <div><span>Distance:</span><b id="s_dist">-</b></div>
+                <div><span>No of Strips:</span><b id="s_strip">-</b></div>
+                <div><span>Photo every:</span><b id="s_photo_every">-</b></div>
+                <div><span>Dist between images:</span><b id="s_dist_img">-</b></div>
+                <div><span>Footprint:</span><b id="s_footprint">-</b></div>
+                <div><span>Ground Resolution:</span><b id="s_gsd">-</b></div>
                 <div><span>Dist between lines:</span><b id="s_dist_line">-</b></div>
             </div>
+
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="modal-btn" style="margin-top:0; border-color: var(--danger); color: var(--danger);" onclick="batalMisiDrone()">BATAL / HAPUS</button>
                 <button class="modal-btn" style="margin-top:0; background: var(--accent); color: white;" onclick="simpanMisiDrone()">SIMPAN MISI</button>
@@ -245,20 +262,20 @@
         <div class="modal-box-header"><span>🌊 Generator Survey / Batimetri</span><span onclick="document.getElementById('modalBatimetri').style.display='none'" style="cursor:pointer">&times;</span></div>
         <div class="modal-box-body">
             <div id="batiBaruSection">
-                <label>Nama Layer Rute:</label><input type="text" id="batiNama" class="modal-input" value="Survey_Batimetri_1" oninput="updateBatiPreview()">
+                <label>Nama Layer Rute:</label><input type="text" id="batiNama" class="modal-input" value="Survey_Batimetri_1" oninput="dbBat()">
                 
                 <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-top: 10px; margin-bottom: 10px;">
                     <label style="color: var(--text-main); font-weight: 700;">GAYA LINTASAN / JALUR</label>
                     <label style="margin-top: 8px; display: block; font-size:11px; font-weight:600;">Lengkungan Belokan (<span id="lblBatiCurve">100</span>%):</label>
-                    <input type="range" id="batiCurve" class="slider" min="0" max="100" value="100" style="width: 100%; margin-top: 5px; margin-bottom: 8px;" oninput="document.getElementById('lblBatiCurve').innerText=this.value; updateBatiPreview();">
+                    <input type="range" id="batiCurve" class="slider" min="0" max="100" value="100" style="width: 100%; margin-top: 5px; margin-bottom: 8px;" oninput="document.getElementById('lblBatiCurve').innerText=this.value; dbBat();">
                     <p style="font-size:9px; color:var(--text-muted); margin:0;">*0% = Sudut Tajam (Kotak) | 100% = U-Turn Penuh (Mulus).</p>
                 </div>
                 
                 <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px;">
                     <label style="color: var(--text-main); font-weight: 700;">LAJUR UTAMA</label>
-                    <div class="input-row"><label>Interval (m):</label><input type="number" id="batiInterval" value="50" min="1" oninput="updateBatiPreview()"></div>
+                    <div class="input-row"><label>Interval (m):</label><input type="number" id="batiInterval" value="50" min="1" oninput="dbBat()"></div>
                     <div class="input-row"><label>Acuan Start:</label>
-                    <select id="batiMainOrient" onchange="updateBatiPreview()">
+                    <select id="batiMainOrient" onchange="dbBat()">
                         <option value="longest|inward" selected>★ Otomatis Sisi Terpanjang</option>
                         <option value="horizontal|top-down">Manual: Horizontal (Atas-Bawah)</option>
                         <option value="horizontal|bottom-up">Manual: Horizontal (Bawah-Atas)</option>
@@ -269,10 +286,10 @@
                 
                 <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px;">
                     <label style="color: var(--text-main); font-weight: 700;">LAJUR LINTAS (Tegak Lurus)</label>
-                    <div class="input-row"><label>Interval (m):</label><input type="number" id="batiCrossInterval" value="150" min="0" oninput="updateBatiPreview()"></div>
+                    <div class="input-row"><label>Interval (m):</label><input type="number" id="batiCrossInterval" value="150" min="0" oninput="dbBat()"></div>
                     
                     <div class="input-row"><label>Arah Sapuan Lintas:</label>
-                    <select id="batiCrossOrient" onchange="updateBatiPreview()">
+                    <select id="batiCrossOrient" onchange="dbBat()">
                         <option value="vertical|left-right" selected>Otomatis / Kiri-Kanan</option>
                         <option value="vertical|right-left">Manual: Kanan-Kiri</option>
                         <option value="horizontal|top-down">Manual: Atas-Bawah</option>
@@ -281,7 +298,7 @@
                     <p style="font-size:9px; color:var(--text-muted); margin-top:5px; margin-bottom:0;">*Isi 0 jika hanya ingin 1 arah (Tanpa Jalur Lintas).</p>
                 </div>
 
-                <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Anda bisa menggeser/mengedit titik poligon di peta untuk merubah jalur secara Live!</p>
+                <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Anda bisa menggeser titik poligon di peta untuk merubah jalur secara Live!</p>
                 
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
                     <button class="modal-btn" style="border-color: var(--danger); color: var(--danger);" onclick="batalMisiBatimetri()">BATAL</button>
@@ -492,10 +509,10 @@
 
     function zoomKeLayer(n) { var b = L.latLngBounds(); layersData[n].eachLayer(l => { if (l.getBounds) b.extend(l.getBounds()); else if (l.getLatLng) b.extend(l.getLatLng()); }); if (b.isValid()) map.flyToBounds(b, { padding: [40, 40] }); }
 
-    // --- FITUR BARU: DIGIT BANGUNAN ANTI ERROR & LEBIH CERDAS ---
+    // --- FITUR BARU: DIGIT BANGUNAN (100% ANTI ERROR) ---
     var isDrawingDigitBangunan = false;
     function inisiasiDigitBangunan() {
-        alert("Gambarlah sebuah area poligon di peta.\nSistem akan otomatis mengekstrak bangunan dari satelit (OSM) di dalam area tersebut menjadi kotak rapi tanpa bertampalan!");
+        alert("Gambarlah sebuah area poligon di peta.\nSistem akan otomatis mengekstrak bangunan dari satelit OSM di dalam area tersebut menjadi kotak rapi.");
         isDrawingDigitBangunan = true;
         map.pm.enableDraw('Polygon', { snappable: false, hintlineStyle: { color: '#06b6d4', dashArray: '5,5' }, pathOptions: { color: '#06b6d4', fillColor: '#06b6d4', fillOpacity: 0.2 } });
     }
@@ -507,9 +524,9 @@
         let userDrawnPolygon;
         try {
             userDrawnPolygon = layer.toGeoJSON();
-            let bboxTest = turf.bbox(userDrawnPolygon);
+            turf.bbox(userDrawnPolygon);
         } catch(e) {
-            alert("Area yang digambar tidak valid! Pastikan garis poligon tidak menyilang.");
+            alert("Area poligon tidak valid!");
             map.removeLayer(layer); return;
         }
 
@@ -520,145 +537,90 @@
         let oldBtnContent = btnDigit.innerHTML;
         btnDigit.innerHTML = '<span class="icon">⏳</span><span class="label">Loading..</span>';
 
-        // Hanya mengekstrak bangunan (ways dan relations) menggunakan metode GET yang 100% aman
+        // Menggunakan metode GET yang paling aman dan ringan dari OSM
         let bboxStr = `${minY},${minX},${maxY},${maxX}`;
-        let query = `[out:json][timeout:30];(way["building"](${bboxStr});relation["building"](${bboxStr}););out geom;`;
-        
-        let data = null;
-        let fetchSuccess = false;
+        let query = `[out:json][timeout:25];(way["building"](${bboxStr});relation["building"](${bboxStr}););out geom;`;
+        let url = "https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(query);
 
         try {
-            // Coba 3 server satelit Overpass berbeda agar tahan banting jika ada yang mati
-            let endpoints = [
-                `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`,
-                `https://lz4.overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`,
-                `https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(query)}`
-            ];
-            
-            for (let url of endpoints) {
-                try {
-                    let response = await fetch(url);
-                    if (response.ok) {
-                        data = await response.json();
-                        fetchSuccess = true;
-                        break; // Berhenti mencoba jika sudah berhasil
-                    }
-                } catch(e) { console.warn("Endpoint gagal, mencoba server cadangan...", url); }
-            }
+            let response = await fetch(url);
+            if (!response.ok) throw new Error("Gagal mengambil data dari satelit OSM (Error " + response.status + ")");
+            let data = await response.json();
 
-            if (!fetchSuccess || !data || !data.elements) {
-                alert("Server satelit OSM sedang sibuk atau menolak permintaan (CORS). Cobalah menggambar poligon yang lebih kecil.");
-                map.removeLayer(layer); 
-                btnDigit.innerHTML = oldBtnContent;
-                return;
-            }
-
-            let rawFeatures = [];
-            data.elements.forEach(el => {
-                if (el.type === 'way' && el.geometry) {
-                    try {
-                        let coords = el.geometry.map(pt => [pt.lon, pt.lat]);
-                        if (coords.length >= 3) {
-                            // Tutup ujung poligon agar sempurna
-                            if (coords[0][0] !== coords[coords.length-1][0] || coords[0][1] !== coords[coords.length-1][1]) {
-                                coords.push([coords[0][0], coords[0][1]]);
-                            }
-                            if(coords.length >= 4) {
-                                let poly = turf.polygon([coords], el.tags || {});
-                                
-                                // Pelindung: Lakukan envelope overlap yang sangat sederhana (tidak akan crash)
-                                let pBox = turf.bbox(poly);
-                                let uBox = turf.bbox(userDrawnPolygon);
-                                if (pBox[0] <= uBox[2] && pBox[2] >= uBox[0] && pBox[1] <= uBox[3] && pBox[3] >= uBox[1]) {
-                                    rawFeatures.push(poly);
-                                }
-                            }
-                        }
-                    } catch(errPol) { console.log("Melewati satu poligon OSM yang rusak (Skip)"); }
-                }
-            });
-
-            if (rawFeatures.length === 0) { 
-                alert("Satelit tidak menemukan data bangunan di area ini."); 
+            if (!data || !data.elements || data.elements.length === 0) { 
+                alert("Tidak ditemukan bangunan pada database satelit OSM di area ini."); 
                 map.removeLayer(layer); 
                 btnDigit.innerHTML = oldBtnContent;
                 return; 
             }
 
             let finalFeatures = [];
-            for (let i = 0; i < rawFeatures.length; i++) {
-                try {
-                    let poly = rawFeatures[i];
-                    let coords = turf.getCoords(poly)[0];
-                    let maxD = 0, angle = 0;
-                    
-                    // Rotasi agar membentuk persegi kaku (Orthogonal)
-                    for (let j = 0; j < coords.length - 1; j++) {
-                        let p1 = turf.point(coords[j]), p2 = turf.point(coords[j+1]);
-                        let d = turf.distance(p1, p2);
-                        if (d > maxD) { maxD = d; angle = turf.bearing(p1, p2); }
-                    }
-                    
-                    let centroid = turf.centroid(poly);
-                    let rotated = turf.transformRotate(poly, -angle, {pivot: centroid});
-                    let bboxPoly = turf.envelope(rotated);
-                    let perfectSquare = turf.transformRotate(bboxPoly, angle, {pivot: centroid});
-                    
-                    perfectSquare.properties = { nama_layer: namaLayer, tipe: "Bangunan (Auto)", osm_id: poly.properties.id || '-' };
-
-                    // Anti-Overlap Bounding Box Cepat
-                    let isOverlapping = false;
-                    for (let f of finalFeatures) {
-                        try {
-                            let b1 = turf.bbox(perfectSquare);
-                            let b2 = turf.bbox(f);
-                            // Jika bounding box tidak bersentuhan, lewati (Aman)
-                            if (!(b1[0] > b2[2] || b1[2] < b2[0] || b1[1] > b2[3] || b1[3] < b2[1])) {
-                                let intersectArea = turf.intersect(perfectSquare, f);
-                                if (intersectArea) {
-                                    let a1 = turf.area(perfectSquare), a2 = turf.area(f), aInt = turf.area(intersectArea);
-                                    if (aInt > (Math.min(a1, a2) * 0.15)) { isOverlapping = true; break; }
+            data.elements.forEach(el => {
+                if (el.type === 'way' && el.geometry) {
+                    try {
+                        let coords = el.geometry.map(pt => [pt.lon, pt.lat]);
+                        if (coords.length >= 3) {
+                            if (coords[0][0] !== coords[coords.length-1][0] || coords[0][1] !== coords[coords.length-1][1]) {
+                                coords.push([coords[0][0], coords[0][1]]); // Tutup poligon
+                            }
+                            if(coords.length >= 4) {
+                                let poly = turf.polygon([coords]);
+                                
+                                // Cek sederhana apakah bangunan berada di dalam area yang digambar
+                                let pBox = turf.bbox(poly);
+                                let uBox = bbox;
+                                if (!(pBox[0] > uBox[2] || pBox[2] < uBox[0] || pBox[1] > uBox[3] || pBox[3] < uBox[1])) {
+                                    
+                                    // Algoritma Kotak Sempurna (OBB) - Ringan dan Cepat
+                                    let c = turf.getCoords(poly)[0];
+                                    let maxD = 0, angle = 0;
+                                    for (let j = 0; j < c.length - 1; j++) {
+                                        let d = turf.distance(turf.point(c[j]), turf.point(c[j+1]));
+                                        if (d > maxD) { maxD = d; angle = turf.bearing(turf.point(c[j]), turf.point(c[j+1])); }
+                                    }
+                                    
+                                    let centroid = turf.centroid(poly);
+                                    let rotated = turf.transformRotate(poly, -angle, {pivot: centroid});
+                                    let bboxPoly = turf.envelope(rotated);
+                                    let perfectSquare = turf.transformRotate(bboxPoly, angle, {pivot: centroid});
+                                    
+                                    perfectSquare.properties = { nama_layer: namaLayer, tipe: "Bangunan (Auto)", osm_id: el.id };
+                                    finalFeatures.push(perfectSquare);
                                 }
                             }
-                        } catch(e) {}
-                    }
-                    if (!isOverlapping) finalFeatures.push(perfectSquare);
-                } catch(e) { console.log("Melewati satu kegagalan saat proses kotak bangunan."); }
-            }
+                        }
+                    } catch(errPol) { console.log("Poligon OSM rusak, di-skip"); }
+                }
+            });
 
             if (finalFeatures.length === 0) { 
-                alert("Semua bangunan ditolak karena bertumpukan (Sistem Anti-Overlap)."); 
+                alert("Gagal memproses bangunan menjadi kotak."); 
                 map.removeLayer(layer); 
                 btnDigit.innerHTML = oldBtnContent;
                 return; 
             }
 
-            // SIMPAN KE DB
-            fetch('/api/save-shp', { 
+            // Simpan ke DB secara instan
+            let saveRes = await fetch('/api/save-shp', { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify({ nama_layer: namaLayer, pengupload: currentUser ? currentUser.username : 'Admin', features: finalFeatures, geom_type: 'Polygon' }) 
-            })
-            .then(res => res.json())
-            .then(d => { 
-                if(d.status === 'Success') {
-                    alert(finalFeatures.length + " Bangunan Berhasil Diekstrak & Tersimpan!"); 
-                    map.removeLayer(layer); 
-                    refreshSemuaData(); 
-                } else {
-                    alert("Berhasil ekstrak, tapi gagal menyimpan ke Database: " + d.error);
-                    map.removeLayer(layer);
-                }
-                btnDigit.innerHTML = oldBtnContent;
-            }).catch(e => {
-                alert("Gagal menghubungi server Database.");
-                map.removeLayer(layer);
-                btnDigit.innerHTML = oldBtnContent;
             });
+            
+            let saveResult = await saveRes.json();
+            if(saveResult.status === 'Success') {
+                alert(finalFeatures.length + " Bangunan Berhasil Diekstrak & Tersimpan!"); 
+                map.removeLayer(layer); 
+                refreshSemuaData(); 
+            } else {
+                alert("Berhasil ekstrak, tapi gagal menyimpan ke Database: " + saveResult.error);
+                map.removeLayer(layer);
+            }
+            btnDigit.innerHTML = oldBtnContent;
 
         } catch (err) { 
             console.error(err); 
-            alert("Error Sistem: " + err.message); 
+            alert("Error: " + err.message); 
             map.removeLayer(layer); 
             btnDigit.innerHTML = oldBtnContent;
         }
