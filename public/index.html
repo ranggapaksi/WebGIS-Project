@@ -50,7 +50,6 @@
         .login-btn { width: 100%; padding: 12px; background: var(--text-main); color: var(--bg-base); font-weight: 600; border: none;}
         .login-btn:hover { background: #334155; }
         .user-badge { font-size: 10px; border: 1px solid var(--border-color); background: var(--bg-base); padding: 3px 8px; border-radius: 4px; margin-left: 10px; display: none; font-weight: 600;}
-        .online-dot { height: 8px; width: 8px; background-color: #10b981; border-radius: 50%; display: inline-block; }
 
         #floating-toolbar { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 1000; }
         .btn-float { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(5px); border: 1px solid var(--border-color); color: var(--text-main); width: 44px; height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -493,7 +492,7 @@
 
     function zoomKeLayer(n) { var b = L.latLngBounds(); layersData[n].eachLayer(l => { if (l.getBounds) b.extend(l.getBounds()); else if (l.getLatLng) b.extend(l.getLatLng()); }); if (b.isValid()) map.flyToBounds(b, { padding: [40, 40] }); }
 
-    // --- FITUR BARU: DIGIT BANGUNAN (GET OVERPASS API & 100% ANTI ERROR) ---
+    // --- FITUR BARU: DIGIT BANGUNAN ANTI ERROR & LEBIH CERDAS ---
     var isDrawingDigitBangunan = false;
     function inisiasiDigitBangunan() {
         alert("Gambarlah sebuah area poligon di peta.\nSistem akan otomatis mengekstrak bangunan dari satelit (OSM) di dalam area tersebut menjadi kotak rapi tanpa bertampalan!");
@@ -510,7 +509,7 @@
             userDrawnPolygon = layer.toGeoJSON();
             let bboxTest = turf.bbox(userDrawnPolygon);
         } catch(e) {
-            alert("Area yang digambar tidak valid! Pastikan garis poligon tidak menyilang (Self-Intersecting).");
+            alert("Area yang digambar tidak valid! Pastikan garis poligon tidak menyilang.");
             map.removeLayer(layer); return;
         }
 
@@ -521,36 +520,34 @@
         let oldBtnContent = btnDigit.innerHTML;
         btnDigit.innerHTML = '<span class="icon">⏳</span><span class="label">Loading..</span>';
 
+        // Hanya mengekstrak bangunan (ways dan relations) menggunakan metode GET yang 100% aman
         let bboxStr = `${minY},${minX},${maxY},${maxX}`;
-        let query = `[out:json][timeout:25];(way["building"](${bboxStr}););out geom;`;
+        let query = `[out:json][timeout:30];(way["building"](${bboxStr});relation["building"](${bboxStr}););out geom;`;
         
         let data = null;
         let fetchSuccess = false;
 
         try {
+            // Coba 3 server satelit Overpass berbeda agar tahan banting jika ada yang mati
             let endpoints = [
-                "https://overpass-api.de/api/interpreter",
-                "https://lz4.overpass-api.de/api/interpreter",
-                "https://z.overpass-api.de/api/interpreter"
+                `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`,
+                `https://lz4.overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`,
+                `https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(query)}`
             ];
             
             for (let url of endpoints) {
                 try {
-                    let response = await fetch(url, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: "data=" + encodeURIComponent(query)
-                    });
+                    let response = await fetch(url);
                     if (response.ok) {
                         data = await response.json();
                         fetchSuccess = true;
-                        break;
+                        break; // Berhenti mencoba jika sudah berhasil
                     }
-                } catch(e) { console.warn("Endpoint failed:", url); }
+                } catch(e) { console.warn("Endpoint gagal, mencoba server cadangan...", url); }
             }
 
             if (!fetchSuccess || !data || !data.elements) {
-                alert("Gagal koneksi ke Server Satelit OSM! Server mungkin sedang sibuk atau area terlalu luas.");
+                alert("Server satelit OSM sedang sibuk atau menolak permintaan (CORS). Cobalah menggambar poligon yang lebih kecil.");
                 map.removeLayer(layer); 
                 btnDigit.innerHTML = oldBtnContent;
                 return;
@@ -562,13 +559,14 @@
                     try {
                         let coords = el.geometry.map(pt => [pt.lon, pt.lat]);
                         if (coords.length >= 3) {
+                            // Tutup ujung poligon agar sempurna
                             if (coords[0][0] !== coords[coords.length-1][0] || coords[0][1] !== coords[coords.length-1][1]) {
-                                coords.push([coords[0][0], coords[0][1]]); // Pastikan tertutup
+                                coords.push([coords[0][0], coords[0][1]]);
                             }
                             if(coords.length >= 4) {
                                 let poly = turf.polygon([coords], el.tags || {});
                                 
-                                // Cek sederhana apakah kotak bangunan berada di dalam kotak tarikan user (Anti Error Turf)
+                                // Pelindung: Lakukan envelope overlap yang sangat sederhana (tidak akan crash)
                                 let pBox = turf.bbox(poly);
                                 let uBox = turf.bbox(userDrawnPolygon);
                                 if (pBox[0] <= uBox[2] && pBox[2] >= uBox[0] && pBox[1] <= uBox[3] && pBox[3] >= uBox[1]) {
@@ -576,12 +574,12 @@
                                 }
                             }
                         }
-                    } catch(errPol) { console.log("Skip invalid polygon from OSM"); }
+                    } catch(errPol) { console.log("Melewati satu poligon OSM yang rusak (Skip)"); }
                 }
             });
 
             if (rawFeatures.length === 0) { 
-                alert("Tidak ditemukan data bangunan OSM di area ini."); 
+                alert("Satelit tidak menemukan data bangunan di area ini."); 
                 map.removeLayer(layer); 
                 btnDigit.innerHTML = oldBtnContent;
                 return; 
@@ -594,7 +592,7 @@
                     let coords = turf.getCoords(poly)[0];
                     let maxD = 0, angle = 0;
                     
-                    // Cari sisi terpanjang
+                    // Rotasi agar membentuk persegi kaku (Orthogonal)
                     for (let j = 0; j < coords.length - 1; j++) {
                         let p1 = turf.point(coords[j]), p2 = turf.point(coords[j+1]);
                         let d = turf.distance(p1, p2);
@@ -608,12 +606,13 @@
                     
                     perfectSquare.properties = { nama_layer: namaLayer, tipe: "Bangunan (Auto)", osm_id: poly.properties.id || '-' };
 
-                    // Anti-Overlap Logic (Toleransi 15%)
+                    // Anti-Overlap Bounding Box Cepat
                     let isOverlapping = false;
                     for (let f of finalFeatures) {
                         try {
                             let b1 = turf.bbox(perfectSquare);
                             let b2 = turf.bbox(f);
+                            // Jika bounding box tidak bersentuhan, lewati (Aman)
                             if (!(b1[0] > b2[2] || b1[2] < b2[0] || b1[1] > b2[3] || b1[3] < b2[1])) {
                                 let intersectArea = turf.intersect(perfectSquare, f);
                                 if (intersectArea) {
@@ -624,11 +623,11 @@
                         } catch(e) {}
                     }
                     if (!isOverlapping) finalFeatures.push(perfectSquare);
-                } catch(e) { }
+                } catch(e) { console.log("Melewati satu kegagalan saat proses kotak bangunan."); }
             }
 
             if (finalFeatures.length === 0) { 
-                alert("Semua bangunan ditolak karena bertumpukan (Anti-Overlap)."); 
+                alert("Semua bangunan ditolak karena bertumpukan (Sistem Anti-Overlap)."); 
                 map.removeLayer(layer); 
                 btnDigit.innerHTML = oldBtnContent;
                 return; 
