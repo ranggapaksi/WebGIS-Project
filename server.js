@@ -22,14 +22,17 @@ pool.connect(async (err, client, done) => {
     else {
         console.log('✅ Berhasil terhubung ke Supabase!');
         try {
-            // PEMBARUAN: Menambahkan kolom last_login secara otomatis
-            await client.query(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username VARCHAR(50) UNIQUE NOT NULL, password VARCHAR(255) NOT NULL, role VARCHAR(20) NOT NULL, last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
-            // Alter jika kolom belum ada untuk database lama
-            try { await client.query(`ALTER TABLE users ADD COLUMN last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`); } catch(e) {}
+            // 1. Pastikan tabel users ada
+            await client.query(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username VARCHAR(50) UNIQUE NOT NULL, password VARCHAR(255) NOT NULL, role VARCHAR(20) NOT NULL);`);
             
+            // 2. PERBAIKAN FATAL ERROR: Tambahkan kolom last_login ke tabel lama secara paksa & aman
+            await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
+            
+            // 3. Relaksasi Geometri (Anti-Error Import SHP MultiPolygon)
             await client.query(`ALTER TABLE shp_poligon ALTER COLUMN geom TYPE geometry(Geometry, 4326) USING geom::geometry(Geometry, 4326);`);
             await client.query(`ALTER TABLE shp_garis ALTER COLUMN geom TYPE geometry(Geometry, 4326) USING geom::geometry(Geometry, 4326);`);
             await client.query(`ALTER TABLE shp_titik ALTER COLUMN geom TYPE geometry(Geometry, 4326) USING geom::geometry(Geometry, 4326);`);
+            console.log('✅ Struktur Database Siap & Berhasil Diupdate!');
         } catch(e) { console.log('Info Database: ' + e.message); }
     }
     if (done) done();
@@ -55,11 +58,9 @@ app.post('/api/login', async (req, res) => {
             
             const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
             if (result.rows.length > 0) { 
-                // PEMBARUAN: Jika username sudah ada, tidak peduli password beda/sama, izinkan masuk dan update password & last_login.
                 await pool.query('UPDATE users SET password = $1, last_login = CURRENT_TIMESTAMP WHERE username = $2', [password, username]);
             } 
             else { 
-                // Buat user baru dengan last_login
                 await pool.query('INSERT INTO users (username, password, role, last_login) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)', [username, password, 'user']); 
             }
             activeUsers.set(username, { role: 'user', lastSeen: Date.now() });
@@ -70,7 +71,6 @@ app.post('/api/login', async (req, res) => {
 
 app.post('/api/heartbeat', (req, res) => { const { username, role } = req.body; if (username) activeUsers.set(username, { role: role, lastSeen: Date.now() }); res.json({ status: 'OK' }); });
 
-// PEMBARUAN: Mengambil SEMUA data user dari database beserta status login terakhirnya
 app.get('/api/online-users', async (req, res) => { 
     try {
         const result = await pool.query('SELECT username, role, last_login FROM users ORDER BY last_login DESC');
