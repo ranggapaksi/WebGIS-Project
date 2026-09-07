@@ -165,7 +165,6 @@
     <button id="btnLiveSync" class="btn-float"><span class="icon">🔄</span><span class="label" id="lblSync">Sync</span></button>
     <button class="btn-float" onclick="document.getElementById('modalShp').style.display='block'"><span class="icon">📁</span><span class="label">Import</span></button>
     
-    <!-- TOMBOL DIGIT BANGUNAN -->
     <button class="btn-float" id="btnDigitBangunan" onclick="inisiasiDigitBangunan()"><span class="icon" style="color: var(--success);">🏢</span><span class="label" style="color: var(--success);">Bangunan</span></button>
     
     <button class="btn-float" onclick="toggleGNSS()"><span class="icon">🛰️</span><span class="label">GNSS</span></button>
@@ -429,24 +428,7 @@
     
     function bukaModalOnline() { document.getElementById('modalOnlineUsers').style.display = 'block'; fetchOnlineUsers(); onlinePollingInterval = setInterval(fetchOnlineUsers, 3000); }
     function tutupModalOnline() { document.getElementById('modalOnlineUsers').style.display = 'none'; clearInterval(onlinePollingInterval); }
-    function fetchOnlineUsers() { 
-        fetch('/api/online-users').then(res => res.json()).then(data => { 
-            const tb = document.getElementById('onlineUsersBody'); tb.innerHTML = ''; 
-            if(data.data) { 
-                data.data.forEach((u, index) => { 
-                    let statusLabel = u.isActive ? '<span style="color:var(--success); font-weight:bold;">● Aktif</span>' : '<span style="color:var(--text-muted);">○ Tidak Aktif</span>';
-                    let timeStr = "-";
-                    if(u.last_login) {
-                        let d = new Date(u.last_login);
-                        let hrs = String(d.getHours()).padStart(2, '0'); let mins = String(d.getMinutes()).padStart(2, '0');
-                        let day = String(d.getDate()).padStart(2, '0'); let mo = String(d.getMonth() + 1).padStart(2, '0'); let yr = d.getFullYear();
-                        timeStr = `${hrs}:${mins} WIB | ${day}/${mo}/${yr}`;
-                    }
-                    tb.innerHTML += `<tr><td style="text-align: center;">${index + 1}</td><td style="font-weight: 600; text-transform:uppercase;">${u.username}</td><td style="font-family: monospace; color: var(--accent); font-weight: bold;">${u.password}</td><td style="color: var(--text-muted);">${u.role === 'admin' ? 'Admin' : 'User'}</td><td>${statusLabel}</td><td style="font-size:10px; color:var(--text-muted); font-family:monospace;">${u.isActive ? 'Sedang Online' : timeStr}</td></tr>`; 
-                }); 
-            } 
-        }).catch(() => {}); 
-    }
+    function fetchOnlineUsers() { fetch('/api/online-users').then(res => res.json()).then(data => { const tb = document.getElementById('onlineUsersBody'); tb.innerHTML = ''; if(data.data) { data.data.forEach((u, index) => { let statusLabel = u.isActive ? '<span style="color:var(--success); font-weight:bold;">● Aktif</span>' : '<span style="color:var(--text-muted);">○ Tidak Aktif</span>'; let timeStr = "-"; if(u.last_login) { let d = new Date(u.last_login); let hrs = String(d.getHours()).padStart(2, '0'); let mins = String(d.getMinutes()).padStart(2, '0'); let day = String(d.getDate()).padStart(2, '0'); let mo = String(d.getMonth() + 1).padStart(2, '0'); let yr = d.getFullYear(); timeStr = `${hrs}:${mins} WIB | ${day}/${mo}/${yr}`; } tb.innerHTML += `<tr><td style="text-align: center;">${index + 1}</td><td style="font-weight: 600; text-transform:uppercase;">${u.username}</td><td style="font-family: monospace; color: var(--accent); font-weight: bold;">${u.password}</td><td style="color: var(--text-muted);">${u.role === 'admin' ? 'Admin' : 'User'}</td><td>${statusLabel}</td><td style="font-size:10px; color:var(--text-muted); font-family:monospace;">${u.isActive ? 'Sedang Online' : timeStr}</td></tr>`; }); } }).catch(() => {}); }
 
     var isLiveSync = false, syncInterval;
     function refreshSemuaData() {
@@ -511,7 +493,7 @@
 
     function zoomKeLayer(n) { var b = L.latLngBounds(); layersData[n].eachLayer(l => { if (l.getBounds) b.extend(l.getBounds()); else if (l.getLatLng) b.extend(l.getLatLng()); }); if (b.isValid()) map.flyToBounds(b, { padding: [40, 40] }); }
 
-    // --- FITUR DIGIT BANGUNAN (GET OVERPASS API & 100% ANTI ERROR) ---
+    // --- FITUR BARU: DIGIT BANGUNAN (GET OVERPASS API & 100% ANTI ERROR) ---
     var isDrawingDigitBangunan = false;
     function inisiasiDigitBangunan() {
         alert("Gambarlah sebuah area poligon di peta.\nSistem akan otomatis mengekstrak bangunan dari satelit (OSM) di dalam area tersebut menjadi kotak rapi tanpa bertampalan!");
@@ -523,7 +505,15 @@
         let namaLayer = prompt("Masukkan Nama Grup Layer untuk Bangunan:", "Digit_Bangunan_01");
         if (!namaLayer) { map.removeLayer(layer); return; }
         
-        let userDrawnPolygon = layer.toGeoJSON();
+        let userDrawnPolygon;
+        try {
+            userDrawnPolygon = layer.toGeoJSON();
+            let bboxTest = turf.bbox(userDrawnPolygon);
+        } catch(e) {
+            alert("Area yang digambar tidak valid! Pastikan garis poligon tidak menyilang (Self-Intersecting).");
+            map.removeLayer(layer); return;
+        }
+
         let bbox = turf.bbox(userDrawnPolygon);
         let minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
 
@@ -531,50 +521,62 @@
         let oldBtnContent = btnDigit.innerHTML;
         btnDigit.innerHTML = '<span class="icon">⏳</span><span class="label">Loading..</span>';
 
-        // Hanya mengambil "way", tanpa "relation" agar data lebih stabil dan tidak berat
         let bboxStr = `${minY},${minX},${maxY},${maxX}`;
         let query = `[out:json][timeout:25];(way["building"](${bboxStr}););out geom;`;
         
         let data = null;
+        let fetchSuccess = false;
 
         try {
-            // Coba metode GET biasa ke beberapa server berbeda
             let endpoints = [
-                `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`,
-                `https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(query)}`
+                "https://overpass-api.de/api/interpreter",
+                "https://lz4.overpass-api.de/api/interpreter",
+                "https://z.overpass-api.de/api/interpreter"
             ];
             
             for (let url of endpoints) {
                 try {
-                    let response = await fetch(url, { method: 'GET' });
+                    let response = await fetch(url, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: "data=" + encodeURIComponent(query)
+                    });
                     if (response.ok) {
                         data = await response.json();
+                        fetchSuccess = true;
                         break;
                     }
                 } catch(e) { console.warn("Endpoint failed:", url); }
             }
 
-            if (!data || !data.elements) {
-                throw new Error("Koneksi ke semua Server Overpass API gagal atau diblokir.");
+            if (!fetchSuccess || !data || !data.elements) {
+                alert("Gagal koneksi ke Server Satelit OSM! Server mungkin sedang sibuk atau area terlalu luas.");
+                map.removeLayer(layer); 
+                btnDigit.innerHTML = oldBtnContent;
+                return;
             }
 
             let rawFeatures = [];
             data.elements.forEach(el => {
                 if (el.type === 'way' && el.geometry) {
-                    let coords = el.geometry.map(pt => [pt.lon, pt.lat]);
-                    if (coords.length >= 3) {
-                        if (coords[0][0] !== coords[coords.length-1][0] || coords[0][1] !== coords[coords.length-1][1]) {
-                            coords.push(coords[0]);
-                        }
-                        if(coords.length >= 4) {
-                            try {
+                    try {
+                        let coords = el.geometry.map(pt => [pt.lon, pt.lat]);
+                        if (coords.length >= 3) {
+                            if (coords[0][0] !== coords[coords.length-1][0] || coords[0][1] !== coords[coords.length-1][1]) {
+                                coords.push([coords[0][0], coords[0][1]]); // Pastikan tertutup
+                            }
+                            if(coords.length >= 4) {
                                 let poly = turf.polygon([coords], el.tags || {});
-                                if (turf.booleanIntersects(poly, userDrawnPolygon)) {
+                                
+                                // Cek sederhana apakah kotak bangunan berada di dalam kotak tarikan user (Anti Error Turf)
+                                let pBox = turf.bbox(poly);
+                                let uBox = turf.bbox(userDrawnPolygon);
+                                if (pBox[0] <= uBox[2] && pBox[2] >= uBox[0] && pBox[1] <= uBox[3] && pBox[3] >= uBox[1]) {
                                     rawFeatures.push(poly);
                                 }
-                            } catch(errPol) { console.log("Skip invalid polygon"); }
+                            }
                         }
-                    }
+                    } catch(errPol) { console.log("Skip invalid polygon from OSM"); }
                 }
             });
 
@@ -592,6 +594,7 @@
                     let coords = turf.getCoords(poly)[0];
                     let maxD = 0, angle = 0;
                     
+                    // Cari sisi terpanjang
                     for (let j = 0; j < coords.length - 1; j++) {
                         let p1 = turf.point(coords[j]), p2 = turf.point(coords[j+1]);
                         let d = turf.distance(p1, p2);
@@ -605,10 +608,13 @@
                     
                     perfectSquare.properties = { nama_layer: namaLayer, tipe: "Bangunan (Auto)", osm_id: poly.properties.id || '-' };
 
+                    // Anti-Overlap Logic (Toleransi 15%)
                     let isOverlapping = false;
                     for (let f of finalFeatures) {
                         try {
-                            if (turf.booleanIntersects(perfectSquare, f)) {
+                            let b1 = turf.bbox(perfectSquare);
+                            let b2 = turf.bbox(f);
+                            if (!(b1[0] > b2[2] || b1[2] < b2[0] || b1[1] > b2[3] || b1[3] < b2[1])) {
                                 let intersectArea = turf.intersect(perfectSquare, f);
                                 if (intersectArea) {
                                     let a1 = turf.area(perfectSquare), a2 = turf.area(f), aInt = turf.area(intersectArea);
@@ -618,7 +624,7 @@
                         } catch(e) {}
                     }
                     if (!isOverlapping) finalFeatures.push(perfectSquare);
-                } catch(e) { console.log("Error memproses bangunan"); }
+                } catch(e) { }
             }
 
             if (finalFeatures.length === 0) { 
@@ -628,6 +634,7 @@
                 return; 
             }
 
+            // SIMPAN KE DB
             fetch('/api/save-shp', { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
@@ -635,22 +642,188 @@
             })
             .then(res => res.json())
             .then(d => { 
-                alert(finalFeatures.length + " Bangunan Berhasil Diekstrak & Tersimpan!"); 
-                map.removeLayer(layer); 
-                refreshSemuaData(); 
+                if(d.status === 'Success') {
+                    alert(finalFeatures.length + " Bangunan Berhasil Diekstrak & Tersimpan!"); 
+                    map.removeLayer(layer); 
+                    refreshSemuaData(); 
+                } else {
+                    alert("Berhasil ekstrak, tapi gagal menyimpan ke Database: " + d.error);
+                    map.removeLayer(layer);
+                }
                 btnDigit.innerHTML = oldBtnContent;
             }).catch(e => {
-                alert("Berhasil ekstrak, tapi gagal menyimpan ke Database.");
+                alert("Gagal menghubungi server Database.");
                 map.removeLayer(layer);
                 btnDigit.innerHTML = oldBtnContent;
             });
 
         } catch (err) { 
             console.error(err); 
-            alert("Terjadi kesalahan: " + err.message); 
+            alert("Error Sistem: " + err.message); 
             map.removeLayer(layer); 
             btnDigit.innerHTML = oldBtnContent;
         }
+    }
+
+    // --- ALGORITMA DRONE PLANNER ---
+    var isDrawingDroneMode = false, currentDronePolygon = null, tempDroneLayer = L.featureGroup().addTo(map);
+    var droneCameras = { 'phantom4rtk': { focal: 8.8, sw: 13.2, sh: 8.8, iw: 5472, ih: 3648 }, 'mavic3e': { focal: 12, sw: 17.3, sh: 13.0, iw: 5280, ih: 3956 } };
+
+    function inisiasiModeDrone() { alert("Silakan gambar area poligon di peta untuk batas terbang Drone."); isDrawingDroneMode = true; map.pm.enableDraw('Polygon', { snappable: false, hintlineStyle: { color: '#f59e0b', dashArray: '5,5' }, pathOptions: { color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.2 } }); }
+    function updateDronePreview() { 
+        try {
+            tempDroneLayer.clearLayers(); if(!currentDronePolygon) return; 
+            var cam = droneCameras[document.getElementById('droneCamera').value]; var alt = parseFloat(document.getElementById('droneAlt').value) || 100; var overlap = parseFloat(document.getElementById('droneOverlap').value) || 80; var sidelap = parseFloat(document.getElementById('droneSidelap').value) || 70; var speed = parseFloat(document.getElementById('droneSpeed').value) || 10; var margin = parseFloat(document.getElementById('droneMargin').value) || 0; var angle = parseFloat(document.getElementById('droneAngle').value) || 0; document.getElementById('lblAngle').innerText = angle;
+            if(overlap >= 95) overlap = 95; if(sidelap >= 95) sidelap = 95;
+            var gsd = (alt * 100 * cam.sw) / (cam.focal * cam.iw); var footW = (alt * cam.sw) / cam.focal, footH = (alt * cam.sh) / cam.focal;
+            var spacing = footW * (1 - (sidelap/100)), triggerDist = footH * (1 - (overlap/100)); 
+            if(spacing < 0.1) spacing = 0.1; if(triggerDist < 0.1) triggerDist = 0.1;
+            var polyData = currentDronePolygon.toGeoJSON(); var centroid = turf.centroid(polyData), rotatedPoly = turf.transformRotate(polyData, -angle, {pivot: centroid}); 
+            var bbox = turf.bbox(rotatedPoly), minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3]; 
+            var lines = [], refPt = turf.point([minX, minY]), distY = turf.distance([minX, minY], [minX, maxY], {units: 'meters'}); 
+            var numLines = Math.floor(distY / spacing) + 1; 
+            if (numLines > 5000) numLines = 5000; 
+            for(let i=0; i<=numLines; i++) { var stepPt = turf.destination(refPt, i * spacing, 0, {units: 'meters'}), currentY = stepPt.geometry.coordinates[1]; var pt1 = turf.destination(turf.point([minX, currentY]), margin + 100, -90, {units: 'meters'}); var pt2 = turf.destination(turf.point([maxX, currentY]), margin + 100, 90, {units: 'meters'}); lines.push(turf.lineString([pt1.geometry.coordinates, pt2.geometry.coordinates])); } 
+            var rotatedLines = lines.map(line => turf.transformRotate(line, angle, {pivot: centroid})), continuousCoords = [], flip = false; 
+            rotatedLines.forEach(line => { var split; try { split = turf.lineSplit(line, polyData); } catch(e){} var segments = []; if(split && split.features.length > 0) { split.features.forEach(seg => { if(turf.booleanPointInPolygon(turf.along(seg, turf.length(seg)/2), polyData)) segments.push(seg); }); } else { if(turf.booleanPointInPolygon(turf.along(line, turf.length(line)/2), polyData)) segments.push(line); } if(segments.length > 0) { segments.sort((a,b) => turf.length(b) - turf.length(a)); var bestSeg = segments[0]; if (margin > 0) { var c = bestSeg.geometry.coordinates; if (turf.length(bestSeg, {units: 'meters'}) > 0) { var p1 = turf.point(c[0]), p2 = turf.point(c[c.length-1]), bearing = turf.bearing(p1, p2); var extP1 = turf.destination(p1, margin, bearing - 180, {units: 'meters'}).geometry.coordinates; var extP2 = turf.destination(p2, margin, bearing, {units: 'meters'}).geometry.coordinates; bestSeg = turf.lineString([extP1, ...c.slice(1, -1), extP2]); } } var finalCoords = bestSeg.geometry.coordinates; if(flip) finalCoords.reverse(); continuousCoords.push(...finalCoords); flip = !flip; } }); 
+            if(continuousCoords.length > 1) { 
+                var flightPath = turf.lineString(continuousCoords); var distanceMeters = turf.length(flightPath, {units: 'meters'}), timeSec = distanceMeters / speed, numPics = Math.ceil(distanceMeters / triggerDist), areaM2 = turf.area(polyData);
+                L.geoJSON(flightPath, { style: { color: '#10b981', weight: 2 }, pmIgnore: true }).addTo(tempDroneLayer); L.circleMarker([continuousCoords[0][1], continuousCoords[0][0]], {radius: 6, color: '#fff', fillColor: '#10b981', fillOpacity: 1, weight: 2, pmIgnore: true}).bindTooltip("START", {permanent:true, direction:'right'}).addTo(tempDroneLayer); L.circleMarker([continuousCoords[continuousCoords.length-1][1], continuousCoords[continuousCoords.length-1][0]], {radius: 6, color: '#fff', fillColor: '#ef4444', fillOpacity: 1, weight: 2, pmIgnore: true}).bindTooltip("END", {permanent:true, direction:'right'}).addTo(tempDroneLayer); 
+                document.getElementById('s_area').innerText = Math.round(areaM2) + " m²"; document.getElementById('s_pic').innerText = numPics + " Foto"; document.getElementById('s_time').innerText = Math.floor(timeSec/60) + ":" + Math.round(timeSec%60).toString().padStart(2, '0') + " Menit"; document.getElementById('s_dist').innerText = (distanceMeters/1000).toFixed(2) + " km"; document.getElementById('s_strip').innerText = Math.round(numLines); document.getElementById('s_photo_every').innerText = (triggerDist / speed).toFixed(1) + " Detik"; document.getElementById('s_dist_img').innerText = triggerDist.toFixed(1) + " m"; document.getElementById('s_footprint').innerText = footW.toFixed(1) + " x " + footH.toFixed(1) + " m"; document.getElementById('s_gsd').innerText = gsd.toFixed(2) + " cm/px"; document.getElementById('s_dist_line').innerText = spacing.toFixed(1) + " m";
+                flightPath.properties = { nama_layer: document.getElementById('droneNama').value, gsd: gsd.toFixed(2), overlap: overlap, sidelap: sidelap, altitude_m: alt, speed_ms: speed, total_jarak_km: (distanceMeters/1000).toFixed(2), foto: numPics }; tempDroneLayer.currentPath = flightPath;
+            } else { document.getElementById('droneStats').innerHTML = `<span style="color:var(--danger)">Area poligon terlalu sempit.</span>`; }
+        } catch(err) { console.error(err); }
+    }
+    function simpanMisiDrone() { if(!currentDronePolygon || !tempDroneLayer.currentPath) return alert("Gagal menyimpan rute! Pastikan area memadai."); fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: document.getElementById('droneNama').value, pengupload: currentUser.username, features: [tempDroneLayer.currentPath], geom_type: 'LineString' }) }).then(res => res.json()).then(d => { alert("Rute Misi Drone Berhasil Disimpan!"); batalMisiDrone(); refreshSemuaData(); }); }
+    function batalMisiDrone() { document.getElementById('modalDronePlanner').style.display = 'none'; if(currentDronePolygon) map.removeLayer(currentDronePolygon); tempDroneLayer.clearLayers(); currentDronePolygon = null; }
+
+    // --- ALGORITMA BATIMETRI ---
+    var isDrawingBatimetri = false, currentBatiPolygon = null, tempBatiLayer = L.featureGroup().addTo(map);
+    function bukaModalBatimetri() { document.getElementById('modalBatimetri').style.display = 'block'; updateBatiPreview(); }
+    function mulaiGambarBatimetri() { document.getElementById('modalBatimetri').style.display = 'none'; isDrawingBatimetri = true; map.pm.enableDraw('Polygon', { snappable: false }); }
+    function batalMisiBatimetri() { document.getElementById('modalBatimetri').style.display = 'none'; if(currentBatiPolygon) map.removeLayer(currentBatiPolygon); tempBatiLayer.clearLayers(); currentBatiPolygon = null; }
+    
+    function updateBatiPreview() {
+        try {
+            tempBatiLayer.clearLayers(); if(!currentBatiPolygon) return;
+            var interval = parseFloat(document.getElementById('batiInterval').value) || 50, crossInterval = parseFloat(document.getElementById('batiCrossInterval').value) || 0, curvePercent = parseFloat(document.getElementById('batiCurve').value);
+            if (isNaN(curvePercent)) curvePercent = 100;
+            var mainOrient = document.getElementById('batiMainOrient').value;
+            if (interval < 0.1) interval = 0.1;
+            
+            var polyData = currentBatiPolygon.toGeoJSON();
+            var centroid = turf.centroid(polyData);
+            
+            function getLongestEdgeAngle(poly) { 
+                var coords = turf.getCoords(poly)[0]; var maxD = 0, angle = 0; 
+                for(var i=0; i<coords.length-1; i++) { 
+                    var p1 = turf.point(coords[i]), p2 = turf.point(coords[i+1]), d = turf.distance(p1, p2); 
+                    if(d > maxD) { maxD = d; angle = turf.bearing(p1, p2); } 
+                } 
+                return angle; 
+            }
+            
+            var baseAngle = 0; var isOto = mainOrient.startsWith('longest');
+            if (isOto) { 
+                baseAngle = getLongestEdgeAngle(polyData); 
+                baseAngle -= 90;
+            } else if (mainOrient.startsWith('horizontal')) { baseAngle = 90; } else { baseAngle = 0; }
+
+            function buildContinuousTrack(angleDeg, intv, isMainTrack) {
+                if(!intv || intv <= 0) return null;
+                var flatPoly = turf.transformRotate(polyData, -angleDeg, {pivot: centroid});
+                var polyLine = turf.polygonToLine(flatPoly);
+                var bbox = turf.bbox(flatPoly); 
+                var minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
+                var ptMin = turf.point([minX, minY]), ptMaxY = turf.point([minX, maxY]);
+                var totalHeight = turf.distance(ptMin, ptMaxY, {units: 'meters'});
+                var numLinesReal = Math.floor(totalHeight / intv);
+                var row_segments = []; var overshoot = 5; 
+                
+                if(numLinesReal > 2000) numLinesReal = 2000;
+
+                var reverseOrder = false;
+                if (!isOto) { 
+                    if (isMainTrack) { 
+                        if (mainOrient.includes('top-down') || mainOrient.includes('right-left')) reverseOrder = true; 
+                    } else { 
+                        var crossOrient = document.getElementById('batiCrossOrient') ? document.getElementById('batiCrossOrient').value : '';
+                        if (crossOrient.includes('top-down') || crossOrient.includes('right-left')) reverseOrder = true; 
+                    } 
+                }
+
+                var pad = Math.max((maxX - minX) * 0.5, 0.05);
+
+                for(var i=0; i<=numLinesReal; i++) {
+                    var stepDist = reverseOrder ? (totalHeight - (i * intv) - (intv/2)) : (i * intv + (intv/2));
+                    if (stepDist < 0 || stepDist > totalHeight) continue;
+                    
+                    var yPt = turf.destination(ptMin, stepDist, 0, {units: 'meters'});
+                    var y = yPt.geometry.coordinates[1];
+                    
+                    var yTop = turf.destination(turf.point([minX, y]), 0.5, 0, {units: 'meters'}).geometry.coordinates[1];
+                    var yBot = turf.destination(turf.point([minX, y]), 0.5, 180, {units: 'meters'}).geometry.coordinates[1];
+                    var xLeft = turf.destination(turf.point([minX, y]), pad, -90, {units: 'meters'}).geometry.coordinates[0];
+                    var xRight = turf.destination(turf.point([maxX, y]), pad, 90, {units: 'meters'}).geometry.coordinates[0];
+                    
+                    var sliver = turf.polygon([[[xLeft, yBot], [xRight, yBot], [xRight, yTop], [xLeft, yTop], [xLeft, yBot]]]);
+                    var intersection = null;
+                    try { intersection = turf.intersect(flatPoly, sliver); } catch(e){}
+                    
+                    if (intersection) {
+                        var intBbox = turf.bbox(intersection);
+                        var pLeft = turf.destination(turf.point([intBbox[0], y]), overshoot, -90, {units: 'meters'}).geometry.coordinates;
+                        var pRight = turf.destination(turf.point([intBbox[2], y]), overshoot, 90, {units: 'meters'}).geometry.coordinates;
+                        row_segments.push({ left: pLeft, right: pRight, y: y });
+                    }
+                }
+
+                if(row_segments.length < 2) return null;
+                
+                var continuousCoords = []; var goingRight = true;
+                for(var i=0; i<row_segments.length; i++) {
+                    var row = row_segments[i];
+                    if (i > 0) {
+                        var prevRow = row_segments[i-1], isRightBulge = !goingRight; 
+                        var p1 = isRightBulge ? prevRow.right : prevRow.left;
+                        var p2 = isRightBulge ? row.right : row.left;
+
+                        if(curvePercent > 0) {
+                            var ctrlDist = (intv * 0.55) * (curvePercent / 100); 
+                            var ctrlBearing = isRightBulge ? 90 : -90; 
+                            var midY = (p1[1] + p2[1]) / 2;
+                            var baseBulgeX = isRightBulge ? Math.max(p1[0], p2[0]) : Math.min(p1[0], p2[0]);
+                            var ctrlPt = turf.destination(turf.point([baseBulgeX, midY]), ctrlDist, ctrlBearing, {units: 'meters'}).geometry.coordinates;
+
+                            var numPts = 12;
+                            for(var j=1; j<numPts; j++) {
+                                var t = j / numPts;
+                                var bx = Math.pow(1-t, 2)*p1[0] + 2*(1-t)*t*ctrlPt[0] + Math.pow(t, 2)*p2[0];
+                                var by = Math.pow(1-t, 2)*p1[1] + 2*(1-t)*t*ctrlPt[1] + Math.pow(t, 2)*p2[1];
+                                continuousCoords.push([bx, by]);
+                            }
+                        }
+                    }
+                    if(goingRight) { continuousCoords.push(row.left); continuousCoords.push(row.right); } 
+                    else { continuousCoords.push(row.right); continuousCoords.push(row.left); }
+                    goingRight = !goingRight;
+                }
+                return turf.transformRotate(turf.lineString(continuousCoords), angleDeg, {pivot: centroid});
+            }
+
+            var mainLine = buildContinuousTrack(baseAngle, interval, true);
+            if(mainLine) { mainLine.properties = { type: "Main Lines" }; L.geoJSON(mainLine, {style: {color: '#f59e0b', weight: 2}, pmIgnore: true}).addTo(tempBatiLayer); tempBatiLayer.mainLine = mainLine; }
+            if(crossInterval > 0) {
+                var crossLine = buildContinuousTrack(baseAngle + 90, crossInterval, false);
+                if(crossLine) { crossLine.properties = { type: "Cross Lines" }; L.geoJSON(crossLine, {style: {color: '#06b6d4', weight: 2}, pmIgnore: true}).addTo(tempBatiLayer); tempBatiLayer.crossLine = crossLine; }
+            }
+        } catch(err) { console.error(err); }
+    }
+
+    function simpanMisiBatimetri() {
+        if(!currentBatiPolygon || !tempBatiLayer.mainLine) return alert("Rute gagal dibuat! Periksa kembali area dan interval.");
+        var featuresToSave = [tempBatiLayer.mainLine]; if(tempBatiLayer.crossLine) featuresToSave.push(tempBatiLayer.crossLine);
+        fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: document.getElementById('batiNama').value, pengupload: currentUser.username, features: featuresToSave, geom_type: 'LineString' }) }).then(res => res.json()).then(d => { alert("Rute Survey Berhasil Disimpan!"); batalMisiBatimetri(); refreshSemuaData(); });
     }
 
     var drnTm; function dbDrn() { clearTimeout(drnTm); drnTm = setTimeout(updateDronePreview, 150); }
