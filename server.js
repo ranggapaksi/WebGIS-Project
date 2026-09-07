@@ -22,13 +22,8 @@ pool.connect(async (err, client, done) => {
     else {
         console.log('✅ Berhasil terhubung ke Supabase!');
         try {
-            // 1. Pastikan tabel users ada
             await client.query(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username VARCHAR(50) UNIQUE NOT NULL, password VARCHAR(255) NOT NULL, role VARCHAR(20) NOT NULL);`);
-            
-            // 2. PERBAIKAN FATAL ERROR: Tambahkan kolom last_login ke tabel lama secara paksa & aman
             await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
-            
-            // 3. Relaksasi Geometri (Anti-Error Import SHP MultiPolygon)
             await client.query(`ALTER TABLE shp_poligon ALTER COLUMN geom TYPE geometry(Geometry, 4326) USING geom::geometry(Geometry, 4326);`);
             await client.query(`ALTER TABLE shp_garis ALTER COLUMN geom TYPE geometry(Geometry, 4326) USING geom::geometry(Geometry, 4326);`);
             await client.query(`ALTER TABLE shp_titik ALTER COLUMN geom TYPE geometry(Geometry, 4326) USING geom::geometry(Geometry, 4326);`);
@@ -73,10 +68,12 @@ app.post('/api/heartbeat', (req, res) => { const { username, role } = req.body; 
 
 app.get('/api/online-users', async (req, res) => { 
     try {
-        const result = await pool.query('SELECT username, role, last_login FROM users ORDER BY last_login DESC');
+        // PEMBARUAN: Menambahkan kolom password ke kueri SELECT
+        const result = await pool.query('SELECT username, password, role, last_login FROM users ORDER BY last_login DESC');
         const usersList = result.rows.map(row => {
             const isActive = activeUsers.has(row.username);
-            return { username: row.username, role: row.role, isActive: isActive, last_login: row.last_login };
+            // PEMBARUAN: Memasukkan data password ke array untuk dikirim ke frontend
+            return { username: row.username, password: row.password, role: row.role, isActive: isActive, last_login: row.last_login };
         });
         res.json({ status: 'Success', data: usersList });
     } catch (err) {
